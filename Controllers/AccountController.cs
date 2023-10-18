@@ -1,34 +1,27 @@
-﻿using Antlr.Runtime.Misc;
-using Dapper;
-using myhw.Models;
-using System;
-using System.Collections.Generic;
-using System.Configuration;
-using System.Data.SqlClient;
-using System.Diagnostics;
-using System.Linq;
+﻿using System;
 using System.Web;
 using System.Web.Mvc;
+using myhw.Models;
+using myhw.Repository;
 
 namespace myhw.Controllers
 {
     public class AccountController : Controller
     {
-        private readonly string _connectionString = @"Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=LOG;Integrated Security=True;";
-
-        public bool LoginIsSuccessful { get; private set; }
+        private readonly AccountRepository _repository = new AccountRepository();
 
         public ActionResult Log()
         {
             var model = new LogViewModel();
 
+            // 檢查是否存在 "RememberMe" Cookie 並相應地設置模型
             var rememberMeCookie = Request.Cookies["RememberMe"];
             if (rememberMeCookie != null)
             {
-                model.Username = Decrypt(rememberMeCookie.Value);
                 model.RememberMe = true;
             }
 
+            // 如果登入成功，則重定向到 "Front"
             if (TempData.Peek("LoginIsSuccessful") != null && (bool)TempData["LoginIsSuccessful"])
             {
                 return RedirectToAction("Front");
@@ -37,143 +30,66 @@ namespace myhw.Controllers
             return View(model);
         }
 
-        private string Decrypt(string encryptedText)
-        {
-            // 在這裡實現解密邏輯，與加密邏輯相對應
-            // 注意：實際上，應該使用安全的解密算法，這裡僅作為示例
-            return encryptedText; // 這裡示範一個簡單的假解密，實際應用中應使用更安全的方法
-        }
-
         public ActionResult Register()
         {
-            RegisterViewModel viewmodel = null;
-            
+            // 初始化視圖模型
+            var viewModel = new RegisterViewModel();
+
             // 你的動作方法邏輯
-            return View(viewmodel);
+
+            return View(viewModel);
         }
 
-
-
-
-        private bool IsLoginSuccessful(LogViewModel model)
+        private void SetRememberMeCookie(string username)
         {
-            try
+            // 使用 Cookie 存儲使用者名稱
+            var cookie = new HttpCookie("RememberMe")
             {
-                using (var connection = new SqlConnection(_connectionString))
-                {
-                    connection.Open();
+                Value = username,
+                Expires = DateTime.Now.AddMonths(1)
+            };
 
-                    var query = "SELECT Password FROM Users WHERE Username = @Username";
-                    var storedPassword = connection.QuerySingleOrDefault<string>(query, new { Username = model.Username });
-
-                    if (storedPassword != null)
-                    {
-                        if (VerifyPassword(model.Password, storedPassword))
-                        {
-                            return true;
-                        }
-                    }
-
-                    return false;
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"登入失敗: {ex.Message}");
-                return false;
-            }
+            Response.Cookies.Add(cookie);
         }
-        private bool VerifyPassword(string enteredPassword, string storedPassword)
+
+        public ActionResult Front()
         {
-            // 在這裡實現密碼比對邏輯，使用適當的加密或雜湊算法
-            // 以下僅作為示例，不建議在實際應用中使用此方式
-            return enteredPassword == storedPassword;
+            // 顯示 "Front" 視圖
+            return View("Front");
         }
-
 
         [HttpPost]
         public ActionResult Log(LogViewModel model)
         {
-            if (IsLoginSuccessful(model))
+            // 檢查登入是否成功
+            var user = _repository.IsLoginSuccessful(model);
+
+            if (user != null)
             {
+                // 設置 TempData 表示成功登入
                 TempData["LoginIsSuccessful"] = true;
 
+                // 如果勾選了 "RememberMe"，則設置 Cookie
                 if (model.RememberMe)
                 {
                     SetRememberMeCookie(model.Username);
                 }
 
-                TempData.Keep("LoginIsSuccessful");
+                // 將使用者資訊存放在 Session 中
+                Session["UserId"] = user.UserId;
+                Session["Username"] = user.Username;
+                Session["Email"] = user.Email;
 
+                // 保留 TempData 並重定向到 "Front"
+                TempData.Keep("LoginIsSuccessful");
                 return RedirectToAction("Front");
             }
 
+            // 如果登入失敗，則添加模型錯誤
             ModelState.AddModelError("", "登入失敗，請檢查帳號密碼");
             return View(model);
         }
 
-
-        // 登入成功的頁面
-        public ActionResult Front()
-        {
-            return View("Front");
-
-        }
-
-        private void SetRememberMeCookie(string username)
-        {
-            // 使用 cookie 來存儲帳號
-            HttpCookie cookie = new HttpCookie("RememberMe");
-            cookie.Value = username;
-            cookie.Expires = DateTime.Now.AddMonths(1); // 設定 cookie 的過期時間
-            Response.Cookies.Add(cookie);
-        }
-
-        private string Encrypt(string text)
-        {
-            // 在這裡實現加密邏輯，例如使用 ASP.NET 的 MachineKey 加密
-            // 注意：實際上，應該使用安全的加密算法，這裡僅作為示例
-            return text; // 這裡示範一個簡單的假加密，實際應用中應使用更安全的方法
-        }
-
-        // 註冊
-        private string RegisterViewModel(string username, string password,string email)
-        {
-            try
-            {
-                using (var connection = new SqlConnection(_connectionString))
-                {
-                    connection.Open();
-
-                    // 檢查使用者名稱是否已存在
-                    var checkIfExistsSql = "SELECT COUNT(*) FROM Users WHERE Username = @Username";
-                    var existingUserCount = connection.ExecuteScalar<int>(checkIfExistsSql, new { Username = username });
-
-                    if (existingUserCount > 0)
-                    {
-                        // 使用者名稱已存在
-                        return "已登記";
-                    }
-
-                    // 如果使用者名稱不存在，則將使用者資料插入資料庫
-                    var insertUserSql = "INSERT INTO Users (Username, Password,Email) VALUES (@Username, @Password,@Email)";
-                    connection.Execute(insertUserSql, new { Username = username, Password = password,Email=email });
-
-                    // 註冊成功
-                    return "註冊成功";
-                }
-            }
-            catch (Exception ex)
-            {
-                // 處理例外狀況，例如記錄錯誤訊息或回應使用者註冊失敗
-                Console.WriteLine($"註冊失敗: {ex.Message}");
-                Console.WriteLine($"StackTrace: {ex.StackTrace}");
-                Console.WriteLine($"InnerException: {ex.InnerException?.ToString()}");
-
-                // 註冊失敗
-                return "註冊失敗";
-            }
-        }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -181,28 +97,23 @@ namespace myhw.Controllers
         {
             if (ModelState.IsValid)
             {
-                // 在這裡實現註冊邏輯
-                string registrationStatus = RegisterViewModel(model.Username, model.Password,model.Email);
+                // 嘗試註冊使用者
+                string registrationStatus = _repository.RegisterViewModel(model.Username, model.Password, model.Email);
 
                 if (registrationStatus == "註冊成功")
                 {
-                    // 註冊成功，可以導向到其他頁面或執行其他操作
+                    // 註冊成功，重定向到登入頁面
                     return RedirectToAction("Log");
                 }
                 else
                 {
-                    // 將 registrationStatus 訊息顯示給使用者
+                    // 如果有註冊錯誤，顯示錯誤
                     ModelState.AddModelError("", registrationStatus);
                 }
             }
-            else
-            {
 
-            }
-
-            // 如果 ModelState 無效，或註冊失敗，返回註冊頁面並顯示錯誤
+            // 如果 ModelState 無效或註冊失敗，返回帶有錯誤的視圖
             return View(model);
         }
-
     }
 }
