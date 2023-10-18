@@ -14,29 +14,13 @@ namespace myhw
             {
                 routes.IgnoreRoute("{resource}.axd/{*pathInfo}");
 
-                
+ 
                 routes.MapRoute(
-                    name: "Register",
-                    url: "Account/Register",
-                    defaults: new { controller = "Account", action = "Register", id = UrlParameter.Optional }
+                        name: "default",
+                        url: "{controller}/{action}/{id}",
+                        defaults: new { controller = "Account", action = "Log", id = UrlParameter.Optional }
                 );
                
-            }
-            public static void LogRoutes(RouteCollection routes)
-            {
-                routes.IgnoreRoute("{resource}.axd/{*pathInfo}");
-
-                routes.MapRoute(
-                    name: "Log",
-                    url: "Account/Log",
-                    defaults: new { controller = "Account", action = "Log", id = UrlParameter.Optional }
-                );
-
-                routes.MapRoute(
-                    name: "Front",
-                    url: "Account/Front",
-                    defaults: new { controller = "Account", action = "Front", id = UrlParameter.Optional }
-                );
             }
 
 
