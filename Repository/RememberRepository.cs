@@ -1,4 +1,4 @@
-﻿using System;
+﻿/*using System;
 using System.Data.SqlClient;
 using Dapper;
 
@@ -6,7 +6,7 @@ public class RememberRepository
 {
     private readonly string _connectionString = @"Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=LOG;Integrated Security=True;";
 
-    public bool RegisterUser(string username, string password)
+    public string RegisterUser(string username, string password)
     {
         try
         {
@@ -20,22 +20,28 @@ public class RememberRepository
 
                 if (existingUserCount > 0)
                 {
-                    // 使用者名稱已存在，不允許註冊
-                    return false;
+                    // 使用者已存在
+                    return "已經有登記了";
                 }
 
-                // 如果使用者名稱不存在，則將使用者資料插入資料庫
+                // 將使用者插入資料庫
                 var insertUserSql = "INSERT INTO Users (Username, Password) VALUES (@Username, @Password)";
                 connection.Execute(insertUserSql, new { Username = username, Password = password });
 
-                return true;
+                // 註冊成功
+                return "註冊成功";
             }
         }
         catch (Exception ex)
         {
-            // 處理例外狀況，例如記錄錯誤訊息或回應使用者註冊失敗
+            // 記錄例外狀況詳細資訊
             Console.WriteLine($"註冊失敗: {ex.Message}");
-            return false;
+            Console.WriteLine($"StackTrace: {ex.StackTrace}");
+            Console.WriteLine($"InnerException: {ex.InnerException?.ToString()}");
+
+            // 註冊失敗
+            return "註冊失敗";
         }
     }
-}
+}*/
+

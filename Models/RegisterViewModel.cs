@@ -8,7 +8,7 @@ namespace myhw.Models
     public class RegisterViewModel
     {
         [Required]
-        [Display(Name = "Username")]
+        [Display(Name = "帳號")]
         public string Username { get; set; }
         [Required]
         [DataType(DataType.Password)]

@@ -1,4 +1,5 @@
-﻿using Dapper;
+﻿using Antlr.Runtime.Misc;
+using Dapper;
 using myhw.Models;
 using System;
 using System.Collections.Generic;
@@ -45,8 +46,10 @@ namespace myhw.Controllers
 
         public ActionResult Register()
         {
+            RegisterViewModel viewmodel = null;
+            
             // 你的動作方法邏輯
-            return View();
+            return View(viewmodel);
         }
 
 
@@ -134,7 +137,7 @@ namespace myhw.Controllers
         }
 
         // 註冊
-        private bool RegisterViewModel(string username, string password)
+        private string RegisterViewModel(string username, string password,string email)
         {
             try
             {
@@ -148,25 +151,28 @@ namespace myhw.Controllers
 
                     if (existingUserCount > 0)
                     {
-                        // 使用者名稱已存在，不允許註冊
-                        return false;
+                        // 使用者名稱已存在
+                        return "已登記";
                     }
 
                     // 如果使用者名稱不存在，則將使用者資料插入資料庫
-                    var insertUserSql = "INSERT INTO Users (Username, Password) VALUES (@Username, @Password)";
-                    connection.Execute(insertUserSql, new { Username = username, Password = password });
+                    var insertUserSql = "INSERT INTO Users (Username, Password,Email) VALUES (@Username, @Password,@Email)";
+                    connection.Execute(insertUserSql, new { Username = username, Password = password,Email=email });
 
-                    return true;
+                    // 註冊成功
+                    return "註冊成功";
                 }
             }
             catch (Exception ex)
             {
+                // 處理例外狀況，例如記錄錯誤訊息或回應使用者註冊失敗
                 Console.WriteLine($"註冊失敗: {ex.Message}");
                 Console.WriteLine($"StackTrace: {ex.StackTrace}");
                 Console.WriteLine($"InnerException: {ex.InnerException?.ToString()}");
-                return false;
-            }
 
+                // 註冊失敗
+                return "註冊失敗";
+            }
         }
 
         [HttpPost]
@@ -176,22 +182,27 @@ namespace myhw.Controllers
             if (ModelState.IsValid)
             {
                 // 在這裡實現註冊邏輯
-                bool registrationSuccessful = RegisterViewModel(model.Username, model.Password);
+                string registrationStatus = RegisterViewModel(model.Username, model.Password,model.Email);
 
-                if (registrationSuccessful)
+                if (registrationStatus == "註冊成功")
                 {
                     // 註冊成功，可以導向到其他頁面或執行其他操作
-                    return RedirectToAction("RegisterSuccess");
+                    return RedirectToAction("Log");
                 }
                 else
                 {
-                    ModelState.AddModelError("", "註冊失敗，可能是因為使用者名稱已存在。");
-
+                    // 將 registrationStatus 訊息顯示給使用者
+                    ModelState.AddModelError("", registrationStatus);
                 }
+            }
+            else
+            {
+
             }
 
             // 如果 ModelState 無效，或註冊失敗，返回註冊頁面並顯示錯誤
             return View(model);
         }
+
     }
 }
