@@ -1,10 +1,41 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Login Success</title>
-</head>
-<body>
-    <h2>Login Successful</h2>
-    <!-- ³o¸Ì¥i¥H¥[¤J¤@¨Çµn¤J¦¨¥\ªº¤º®e -->
-</body>
-</html>
+ï»¿@model IEnumerable<myhw.Models.MessageDataModel>
+
+@{
+    ViewBag.Title = "Message Board";
+}
+
+<h2>Message Board</h2>
+
+@using (Html.BeginForm("Front", "Message", FormMethod.Get))
+{
+    <p>
+        å§“å: @Html.TextBox("name")
+        <input type="submit" value="æœå°‹" />
+    </p>
+}
+
+@if (Model != null && Model.Any())
+{
+    <table class="table">
+        <tr>
+            <th>Timestamp</th>
+            <th>Name</th>
+            <th>Content</th>
+        </tr>
+
+        @foreach (var message in Model)
+        {
+            <tr>
+                <td>@message.Timestamp</td>
+                <td>@message.UserName</td>
+                <td>@message.Content</td>
+            </tr>
+        }
+    </table>
+}
+else
+{
+    <p>æ²¡æœ‰å¯ç”¨çš„æ¶ˆæ¯ã€‚</p>
+}
+
+@Html.ActionLink("Create", "CreateMessage")

@@ -21,41 +21,16 @@ namespace myhw.Controllers
                 model.RememberMe = true;
             }
 
-            // 如果登入成功，則重定向到 "Front"
-            if (TempData.Peek("LoginIsSuccessful") != null && (bool)TempData["LoginIsSuccessful"])
+            // 檢查是否在 Session 中存在成功登入的標誌
+            var loginIsSuccessful = Session["LoginIsSuccessful"] as bool?;
+            if (loginIsSuccessful != null && loginIsSuccessful.Value)
             {
+                // 清除 Session 中的標誌
+                Session.Remove("LoginIsSuccessful");
                 return RedirectToAction("Front");
             }
 
             return View(model);
-        }
-
-        public ActionResult Register()
-        {
-            // 初始化視圖模型
-            var viewModel = new RegisterViewModel();
-
-            // 你的動作方法邏輯
-
-            return View(viewModel);
-        }
-
-        private void SetRememberMeCookie(string username)
-        {
-            // 使用 Cookie 存儲使用者名稱
-            var cookie = new HttpCookie("RememberMe")
-            {
-                Value = username,
-                Expires = DateTime.Now.AddMonths(1)
-            };
-
-            Response.Cookies.Add(cookie);
-        }
-
-        public ActionResult Front()
-        {
-            // 顯示 "Front" 視圖
-            return View("Front");
         }
 
         [HttpPost]
@@ -66,8 +41,8 @@ namespace myhw.Controllers
 
             if (user != null)
             {
-                // 設置 TempData 表示成功登入
-                TempData["LoginIsSuccessful"] = true;
+                // 在 Session 中設置使用者資訊
+                Session["Username"] = "已經登入"; // 請根據 User 物件中的實際屬性進行替換
 
                 // 如果勾選了 "RememberMe"，則設置 Cookie
                 if (model.RememberMe)
@@ -75,13 +50,7 @@ namespace myhw.Controllers
                     SetRememberMeCookie(model.Username);
                 }
 
-                // 將使用者資訊存放在 Session 中
-                Session["UserId"] = user.UserId;
-                Session["Username"] = user.Username;
-                Session["Email"] = user.Email;
-
-                // 保留 TempData 並重定向到 "Front"
-                TempData.Keep("LoginIsSuccessful");
+                // 重定向到 "Front"
                 return RedirectToAction("Front");
             }
 
@@ -91,6 +60,16 @@ namespace myhw.Controllers
         }
 
 
+
+        public ActionResult Register()
+        {
+            // 初始化視圖模型
+            var viewModel = new RegisterViewModel();
+
+            // 你的動作方法邏輯
+
+            return View(viewModel);
+        }
         [HttpPost]
         [ValidateAntiForgeryToken]
         public ActionResult Register(RegisterViewModel model)
@@ -115,5 +94,37 @@ namespace myhw.Controllers
             // 如果 ModelState 無效或註冊失敗，返回帶有錯誤的視圖
             return View(model);
         }
+        private void SetRememberMeCookie(string username)
+        {
+            // 使用 Cookie 存儲使用者名稱
+            var cookie = new HttpCookie("RememberMe")
+            {
+                Value = username,
+                Expires = DateTime.Now.AddMonths(1)
+            };
+
+            Response.Cookies.Add(cookie);
+        }
+
+        public ActionResult Front()
+        {
+            // 檢查使用者是否已經登入
+            if (Session["Username"] != null)
+            {
+                // 使用者已經登入，顯示 "Front" 視圖
+                return View("Front");
+            }
+            else
+            {
+                // 使用者尚未登入，重定向到登入頁面
+                return RedirectToAction("Log");
+            }
+        }
+
+
+
+
+
+
     }
 }
