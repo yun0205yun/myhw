@@ -23,7 +23,7 @@ namespace myhw.Repository
             {
                 connection.Open();
 
-                string query = "SELECT * FROM Messages";
+                string query = "SELECT Content.UserId as 編號, Content.Username as 姓名, Users.Email as Email, Content.Content as 留言,Users.CreatedAt as 時間\r\nFROM Content\r\nJOIN Users ON Content.UserId = Users.UserId\r\nWHERE Users.Username = Content.Username;";
                 using (SqlCommand command = new SqlCommand(query, connection))
                 {
                     using (SqlDataReader reader = command.ExecuteReader())
@@ -33,7 +33,7 @@ namespace myhw.Repository
                             MessageDataModel message = new MessageDataModel
                             {
                                 UserId = Convert.ToInt32(reader["UserId"]),
-                                UserName = Convert.ToString(reader["UserName"]),
+                                Username = Convert.ToString(reader["UserName"]),
                                 Email = Convert.ToString(reader["Email"]),
                                 Content = Convert.ToString(reader["Content"]),
                                 Timestamp = Convert.ToDateTime(reader["Timestamp"])
@@ -56,7 +56,7 @@ namespace myhw.Repository
             {
                 connection.Open();
 
-                string query = "SELECT * FROM Messages WHERE UserName LIKE @Name";
+                string query = "SELECT * FROM Content WHERE UserName LIKE @Name";
                 using (SqlCommand command = new SqlCommand(query, connection))
                 {
                     command.Parameters.AddWithValue("@Name", "%" + name + "%");
@@ -68,7 +68,7 @@ namespace myhw.Repository
                             MessageDataModel message = new MessageDataModel
                             {
                                 UserId = Convert.ToInt32(reader["UserId"]),
-                                UserName = Convert.ToString(reader["UserName"]),
+                                Username = Convert.ToString(reader["UserName"]),
                                 Email = Convert.ToString(reader["Email"]),
                                 Content = Convert.ToString(reader["Content"]),
                                 Timestamp = Convert.ToDateTime(reader["Timestamp"])
@@ -89,12 +89,12 @@ namespace myhw.Repository
             {
                 connection.Open();
 
-                string query = "INSERT INTO Messages (UserName, Email, Content, Timestamp) " +
-                               "VALUES (@UserName, @Email, @Content, @Timestamp)";
+                string query = "INSERT INTO Content(Username, Email, Content, Timestamp) " +
+                               "VALUES (@Username, @Email, @Content, @Timestamp)";
 
                 using (SqlCommand command = new SqlCommand(query, connection))
                 {
-                    command.Parameters.AddWithValue("@UserName", message.UserName);
+                    command.Parameters.AddWithValue("@Username", message.Username);
                     command.Parameters.AddWithValue("@Email", message.Email);
                     command.Parameters.AddWithValue("@Content", message.Content);
                     command.Parameters.AddWithValue("@Timestamp", DateTime.Now);
