@@ -12,7 +12,7 @@ namespace myhw.Models
         /// <summary>
         /// 姓名
         /// </summary>
-        public string UserName { get; set; }
+        public string Username { get; set; }
         /// <summary>
         /// 帳號
         /// </summary>

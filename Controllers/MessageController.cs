@@ -40,6 +40,7 @@ public class MessageController : Controller
     {
         if (ModelState.IsValid)
         {
+            message.Timestamp = DateTime.Now;
             _messageService.AddMessage(message);
             return RedirectToAction("Front");
         }

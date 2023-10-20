@@ -10,7 +10,7 @@ namespace myhw.Repository
         private readonly string _connectionString = @"Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=LOG;Integrated Security=True;";
 
         // 檢查登入是否成功
-        public bool IsLoginSuccessful(LogViewModel model)
+        public bool? IsLoginSuccessful(LogViewModel model)
         {
             try
             {

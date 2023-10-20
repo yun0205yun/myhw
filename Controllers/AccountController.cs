@@ -36,6 +36,7 @@ namespace myhw.Controllers
         [HttpPost]
         public ActionResult Log(LogViewModel model)
         {
+
             // 檢查登入是否成功
             var user = _repository.IsLoginSuccessful(model);
 
