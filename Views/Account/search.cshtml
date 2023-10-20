@@ -1,0 +1,16 @@
+@model IEnumerable<myhw.Models.MessageDataModel>
+
+<h2>Search Results</h2>
+
+<!-- Display search results here -->
+
+@foreach (var message in Model)
+{
+    <div>
+        <p><strong>@(message.UserName):</strong> @message.Content</p>
+
+        <p><small>Posted on @message.Timestamp</small></p>
+    </div>
+}
+
+<p>@Html.ActionLink("Back to Messages", "Front")</p>
