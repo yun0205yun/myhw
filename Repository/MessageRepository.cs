@@ -1,8 +1,11 @@
 ﻿// MessageRepository.cs
+using Dapper;
 using myhw.Models;
 using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
+using System.Linq;
+using System.Reflection;
 
 namespace myhw.Repository
 {
@@ -10,98 +13,142 @@ namespace myhw.Repository
     {
         private readonly string connectionString = @"Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=LOG;Integrated Security=True;";
 
-        public MessageRepository(string connectionString)
+        public MessageRepository( )
         {
-            this.connectionString = connectionString;
         }
 
-        public List<MessageDataModel> GetAllMessages()
+        public List<MessageDataModel> GetAllMessages(MemoryDataModel model)
         {
-            List<MessageDataModel> messages = new List<MessageDataModel>();
-
-            using (SqlConnection connection = new SqlConnection(connectionString))
+          
+            try
             {
-                connection.Open();
-
-                string query = "SELECT Content.UserId as 編號, Content.Username as 姓名, Users.Email as Email, Content.Content as 留言,Users.CreatedAt as 時間\r\nFROM Content\r\nJOIN Users ON Content.UserId = Users.UserId\r\nWHERE Users.Username = Content.Username;";
-                using (SqlCommand command = new SqlCommand(query, connection))
+                using (SqlConnection connection = new SqlConnection(connectionString))
                 {
-                    using (SqlDataReader reader = command.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            MessageDataModel message = new MessageDataModel
-                            {
-                                UserId = Convert.ToInt32(reader["UserId"]),
-                                Username = Convert.ToString(reader["UserName"]),
-                                Email = Convert.ToString(reader["Email"]),
-                                Content = Convert.ToString(reader["Content"]),
-                                Timestamp = Convert.ToDateTime(reader["Timestamp"])
-                            };
+                    connection.Open();
 
-                            messages.Add(message);
-                        }
-                    }
+                    string query = "SELECT Content.UserId , Content.Username , Users.Email , Content.Content , Users.CreatedAt as time FROM Content JOIN Users ON Content.UserId = Users.UserId WHERE Users.Username = @Username;";
+                    var storedPName = connection.Query<MessageDataModel>(query, new { Username = model.Username }).ToList();
+                    return storedPName;
                 }
             }
-
-            return messages;
+            catch (Exception ex)
+            {
+                // Handle or log the exception
+                Console.WriteLine($"Error in GetAllMessages: {ex.Message}");
+                return new List<MessageDataModel>();
+            }
         }
+
 
         public List<MessageDataModel> GetMessagesByName(string name)
         {
-            List<MessageDataModel> messages = new List<MessageDataModel>();
-
-            using (SqlConnection connection = new SqlConnection(connectionString))
+            try
             {
-                connection.Open();
-
-                string query = "SELECT * FROM Content WHERE UserName LIKE @Name";
-                using (SqlCommand command = new SqlCommand(query, connection))
+                using (SqlConnection connection = new SqlConnection(connectionString))
                 {
-                    command.Parameters.AddWithValue("@Name", "%" + name + "%");
+                    connection.Open();
 
-                    using (SqlDataReader reader = command.ExecuteReader())
-                    {
-                        while (reader.Read())
-                        {
-                            MessageDataModel message = new MessageDataModel
-                            {
-                                UserId = Convert.ToInt32(reader["UserId"]),
-                                Username = Convert.ToString(reader["UserName"]),
-                                Email = Convert.ToString(reader["Email"]),
-                                Content = Convert.ToString(reader["Content"]),
-                                Timestamp = Convert.ToDateTime(reader["Timestamp"])
-                            };
+                    string query = "SELECT * FROM Content WHERE UserName LIKE @Name";
 
-                            messages.Add(message);
-                        }
-                    }
+                    // 使用 Dapper 的 Query 方法，直接映射到 MessageDataModel
+                    var messages = connection.Query<MessageDataModel>(query, new { Name = "%" + name + "%" }).ToList();
+
+                    return messages;
                 }
             }
-
-            return messages;
+            catch (Exception ex)
+            {
+                
+                Console.WriteLine($"Error in GetMessagesByName: {ex.Message}");
+                return new List<MessageDataModel>();
+            }
         }
+
 
         public void AddMessage(MessageDataModel message)
         {
-            using (SqlConnection connection = new SqlConnection(connectionString))
+            try
             {
-                connection.Open();
-
-                string query = "INSERT INTO Content(Username, Email, Content, Timestamp) " +
-                               "VALUES (@Username, @Email, @Content, @Timestamp)";
-
-                using (SqlCommand command = new SqlCommand(query, connection))
+                using (SqlConnection connection = new SqlConnection(connectionString))
                 {
-                    command.Parameters.AddWithValue("@Username", message.Username);
-                    command.Parameters.AddWithValue("@Email", message.Email);
-                    command.Parameters.AddWithValue("@Content", message.Content);
-                    command.Parameters.AddWithValue("@Timestamp", DateTime.Now);
+                    connection.Open();
 
-                    command.ExecuteNonQuery();
+                    string query = "INSERT INTO Content(Username, Email, Content, Timestamp) " +
+                                   "VALUES ((SELECT UserId FROM Users WHERE Username = @Username),@Username, @Email, @Content, @Timestamp)";
+
+                    // 使用 Dapper 的 Execute 方法
+                    connection.Execute(query, new
+                    {
+                        message.Username,
+                        message.Email,
+                        message.Content,
+                        message.Timestamp
+                    });
                 }
             }
+            catch (Exception ex)
+            {
+                // Handle or log the exception
+                Console.WriteLine($"Error in AddMessage: {ex.Message}");
+            
+            }
         }
+        public MessageDataModel GetMessageById(int userId)
+        {
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(connectionString))
+                {
+                    connection.Open();
+
+                    string query = "SELECT * FROM Content WHERE UserId = @UserId";
+                    var message = connection.QueryFirstOrDefault<MessageDataModel>(query, new { UserId = userId });
+
+                    return message;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in GetMessageById: {ex.Message}");
+                return null;
+            }
+        }
+
+        public void UpdateMessage(MessageDataModel message)
+        {
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(connectionString))
+                {
+                    connection.Open();
+
+                    string query = "UPDATE Content SET Content = @Content WHERE UserId = @UserId";
+                    connection.Execute(query, new { message.Content, message.UserId });
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in UpdateMessage: {ex.Message}");
+            }
+        }
+
+        public void DeleteMessage(int userId)
+        {
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(connectionString))
+                {
+                    connection.Open();
+
+                    string query = "DELETE FROM Content WHERE UserId = @UserId";
+                    connection.Execute(query, new { UserId = userId });
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in DeleteMessage: {ex.Message}");
+            }
+        }
+
     }
 }

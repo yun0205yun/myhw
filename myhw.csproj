@@ -165,6 +165,7 @@
   <ItemGroup>
     <Compile Include="App_Start\BundleConfig.cs" />
     <Compile Include="App_Start\FilterConfig.cs" />
+    <Compile Include="Models\MemoryDataModel.cs" />
     <Compile Include="Models\MessageDataModel.cs" />
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="Controllers\AccountController.cs" />
@@ -180,6 +181,7 @@
     <Compile Include="Repository\AccountRepository.cs" />
     <Compile Include="Repository\MessageRepository.cs" />
     <Compile Include="Repository\RememberRepository.cs" />
+    <Compile Include="Repository\User.cs" />
     <Compile Include="Service\MessageService.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -235,9 +237,9 @@
     <Content Include="Views\Home\Index.cshtml" />
     <Content Include="Views\Account\Log.cshtml" />
     <Content Include="Views\Account\Register.cshtml" />
-    <Content Include="Views\Account\Front.cshtml" />
-    <Content Include="Views\Account\Search.cshtml" />
-    <Content Include="Views\Account\Create.cshtml" />
+    <Content Include="Views\Message\Front.cshtml" />
+    <Content Include="Views\Message\Search.cshtml" />
+    <Content Include="Views\Message\Create.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />

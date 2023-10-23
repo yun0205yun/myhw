@@ -1,0 +1,28 @@
+@model myhw.Models.MessageDataModel
+
+@{
+    ViewBag.Title = "Create Message";
+}
+
+<h2>Create Message</h2>
+
+@using (Html.BeginForm ("Create", "Message", FormMethod.Post))
+{
+    @Html.AntiForgeryToken()
+
+    <div class="form-group">
+        @Html.LabelFor(model => model.Username, new { @class = "control-label" })
+        @Html.TextBoxFor(model => model.Username, new { @class = "form-control" })
+        @Html.ValidationMessageFor(model => model.Username, "", new { @class = "text-danger" })
+    </div>
+
+    <div class="form-group">
+        @Html.LabelFor(model => model.Content, new { @class = "control-label" })
+        @Html.TextAreaFor(model => model.Content, new { @class = "form-control", rows = 4 })
+        @Html.ValidationMessageFor(model => model.Content, "", new { @class = "text-danger" })
+    </div>
+
+    <button type="submit" class="btn btn-primary">Create Message</button>
+}
+
+<p>@Html.ActionLink("Back to Messages", "Front", new { @class = "btn btn-secondary" })</p>

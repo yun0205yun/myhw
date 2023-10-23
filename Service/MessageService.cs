@@ -1,10 +1,7 @@
-﻿using myhw.Repository;
+﻿using myhw.Models;
+using myhw.Repository;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Web;
-using System.Web.Services.Description;
-using myhw.Models;
 
 namespace myhw.Service
 {
@@ -12,25 +9,91 @@ namespace myhw.Service
     {
         private readonly MessageRepository _repository;
 
-        public MessageService(MessageRepository repository)
+        public MessageService()
         {
-            _repository = repository;
+            _repository = new MessageRepository();
         }
 
-        public IEnumerable<MessageDataModel> GetAllMessages()
+        public List<MessageDataModel> GetAllMessages(MemoryDataModel model)
         {
-            return _repository.GetAllMessages();
+           
+            try
+            {
+                return _repository.GetAllMessages(model);
+            }
+            catch (Exception ex)
+            {
+                //處理或記錄異常
+                Console.WriteLine($"Error in GetAllMessages: {ex.Message}");
+                return new List<MessageDataModel>();
+            }
         }
 
-        public IEnumerable<MessageDataModel> GetMessagesByName(string name)
+        public List<MessageDataModel> GetMessagesByName(string name)
         {
-            return _repository.GetMessagesByName(name);
+            try
+            {
+                return _repository.GetMessagesByName(name);
+            }
+            catch (Exception ex)
+            {
+               
+                Console.WriteLine($"Error in GetMessagesByName: {ex.Message}");
+                return null; 
+            }
         }
 
         public void AddMessage(MessageDataModel message)
         {
-            message.Timestamp = DateTime.Now;
-            _repository.AddMessage(message);
+            try
+            {
+                message.Timestamp = DateTime.Now;
+                _repository.AddMessage(message);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in AddMessage: {ex.Message}");
+                
+            }
         }
+        public MessageDataModel GetMessageById(int userId) 
+        {
+            try
+            {
+                return _repository.GetMessageById(userId);
+            }
+            catch (Exception ex)
+            {
+
+                Console.WriteLine($"Error in GetMessagesByName: {ex.Message}");
+                return null;
+            }
+        }
+        public void UpdateMessage(MessageDataModel message)
+        {
+            try
+            {
+                // 更新資料庫中的留言
+                _repository.UpdateMessage(message);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in UpdateMessage: {ex.Message}");
+            }
+        }
+
+        public void DeleteMessage(int userId)
+        {
+            try
+            {
+                // 從資料庫中刪除留言
+                _repository.DeleteMessage(userId);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in DeleteMessage: {ex.Message}");
+            }
+        }
+
     }
 }
