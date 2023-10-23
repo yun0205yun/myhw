@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Web;
 using System.Web.Mvc;
+using System.Web.Services.Description;
 using myhw.Models;
 using myhw.Repository;
 
@@ -27,7 +28,7 @@ namespace myhw.Controllers
             {
                 // 清除 Session 中的標誌
                 Session.Remove("LoginIsSuccessful");
-                return RedirectToAction("Front");
+                return RedirectToAction("Front", "Message");
             }
 
             return View(model);
@@ -40,10 +41,10 @@ namespace myhw.Controllers
             // 檢查登入是否成功
             var user = _repository.IsLoginSuccessful(model);
 
-            if (user != null)
+            if (user.IsLoginSuccessful)
             {
                 // 在 Session 中設置使用者資訊
-                Session["Username"] = "已經登入"; // 請根據 User 物件中的實際屬性進行替換
+                Session["Username"] = model.Username; // 請根據 User 物件中的實際屬性進行替換
 
                 // 如果勾選了 "RememberMe"，則設置 Cookie
                 if (model.RememberMe)
@@ -52,7 +53,7 @@ namespace myhw.Controllers
                 }
 
                 // 重定向到 "Front"
-                return RedirectToAction("Front");
+                return RedirectToAction("Front", "Message");
             }
 
             // 如果登入失敗，則添加模型錯誤
@@ -113,12 +114,12 @@ namespace myhw.Controllers
             if (Session["Username"] != null)
             {
                 // 使用者已經登入，顯示 "Front" 視圖
-                return View("Front");
+                return RedirectToAction("Front", "Message");
             }
             else
             {
                 // 使用者尚未登入，重定向到登入頁面
-                return RedirectToAction("Log");
+                return RedirectToAction("Log","Account");
             }
         }
 
