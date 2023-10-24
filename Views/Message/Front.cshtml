@@ -1,4 +1,5 @@
-﻿@model List<myhw.Models.MessageDataModel>
+﻿@using PagedList.Mvc
+@model PagedList.IPagedList<myhw.Models.MessageDataModel>
 
 @{
     ViewBag.Title = "Message Board";
@@ -12,6 +13,16 @@
         姓名: @Html.TextBox("name")
         <input type="submit" value="搜尋" />
     </p>
+}
+
+@if (Session["Username"] != null)
+{
+    <p>歡迎, @Session["Username"]！</p>
+    @Html.ActionLink("登出", "Logout", "Message", new { @class = "btn btn-primary" })
+}
+else
+{
+    @Html.ActionLink("Login", "Log", "Account")
 }
 
 @if (Model != null && Model.Any())
@@ -33,55 +44,63 @@
                 </td>
                 <td id="computerTime">@message.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")</td>
                 <td>
-                    <button class="edit-btn">編輯</button>
-                    <button class="save-btn" style="display: none;">完成</button>
-                    @Html.ActionLink("刪除", "Delete", new { id = message.UserId }, new { @class = "delete-btn", data_user_id = message.UserId })
-
+                    @if (Session["Username"] != null && Session["Username"].ToString() == message.Username)
+                    {
+                        <button class="edit-btn" data-user-id="@message.UserId">編輯</button>
+                        <button class="save-btn" style="display: none;">完成</button>
+                        @Html.ActionLink("刪除", "Delete", new { id = message.UserId }, new { @class = "delete-btn", data_user_id = message.UserId })
+                    }
+                    else
+                    {
+                        <text>你沒有權限</text>
+                    }
                 </td>
             </tr>
         }
     </table>
+    <div class="pagination-container">
+        @Html.PagedListPager(Model, page => page == 1 ? Url.Action("Front", new { page }) : Url.Action("Front", new { page = page }))
+    </div>
 }
 else
 {
     <p>没有可用的消息。</p>
 }
 
-@Html.ActionLink("Create Message", "Create", new { @class = "btn btn-primary" })
+<button class="create-btn btn btn-primary">Create Message</button>
 
 @section scripts {
     <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
     <script>
         $(document).ready(function () {
-            // 獲取當前時間
+            // 获取当前时间
             var currentTime = new Date();
             var formattedTime = currentTime.toLocaleString();
-
             $("#computerTime").text(formattedTime);
-        });
-    </script>
-    <script>
-        $(document).ready(function () {
+
+            // 编辑按钮点击事件
             $(".edit-btn").click(function () {
                 var row = $(this).closest("tr");
                 row.find(".message-content").hide();
+                row.find(".edit-content").val(row.find(".message-content").text());
                 row.find(".edit-content").show();
                 row.find(".edit-btn").hide();
                 row.find(".save-btn").show();
             });
-
+             
+            // 保存按钮点击事件
             $(".save-btn").click(function () {
                 var row = $(this).closest("tr");
-                var userId = row.find(".delete-btn").data("user-id");  // 修正這裡的名稱
+                var contentId = row.find(".edit-btn").data("content-id"); // 使用 data-content-id 属性获取 contentId
                 var editedContent = row.find(".edit-content").val();
 
-                // 使用 Ajax 將修改後的內容提交到後端進行保存
+                // 使用 Ajax 将修改后的内容提交到后端进行保存
                 $.ajax({
                     type: "POST",
                     url: "/Message/UpdateMessage",
-                    data: { userId: userId, content: editedContent },
+                    data: { contentId: contentId, content: editedContent }, // 使用 contentId 作为参数
                     success: function () {
-                        // 更新成功後的處理
+                        // 更新成功后的处理
                         row.find(".message-content").text(editedContent);
                         row.find(".message-content").show();
                         row.find(".edit-content").hide();
@@ -89,40 +108,37 @@ else
                         row.find(".save-btn").hide();
                     },
                     error: function () {
-                        // 更新失敗後的處理
+                        // 更新失败后的处理
                         alert("編輯失敗");
                     }
                 });
             });
 
+
+            // 删除按钮点击事件
             $(".delete-btn").click(function () {
                 var row = $(this).closest("tr");
-                var userId = $(this).data("user-id");  // 修正這裡的名稱
+                var contentId = $(this).data("content-id"); // 使用 data-content-id 属性获取 contentId
 
-                // 使用 Ajax 將 userId 提交到後端進行刪除
+                // 使用 Ajax 将 contentId 提交到后端进行删除
                 $.ajax({
                     type: "POST",
                     url: "/Message/DeleteMessage",
-                    data: { userId: userId },
+                    data: { ContentId: ContentId }, // 使用 contentId 作为参数
                     success: function () {
-                        // 刪除成功後的處理
+                        // 删除成功后的处理
                         row.remove();
                     },
                     error: function () {
-                        // 刪除失敗後的處理
+                        // 删除失败后的处理
                         alert("刪除失敗");
                     }
                 });
             });
-        });
-    </script>
-    <script>
-        $(document).ready(function () {
-            // Your existing JavaScript code
 
-            // 新增留言按鈕的點擊事件
+            // 创建留言按钮点击事件
             $(".create-btn").click(function () {
-                // 導向到 Create 頁面
+                // 导向到 Create 页面
                 window.location.href = '@Url.Action("Create", "Message")';
             });
         });

@@ -7,6 +7,7 @@ namespace myhw.Models
 {
     public class MemoryDataModel
     {
+        
         public string Username { get; set; }
         /// <summary>
         /// 使用者密碼
