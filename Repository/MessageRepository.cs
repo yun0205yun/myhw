@@ -1,11 +1,9 @@
-﻿// MessageRepository.cs
-using Dapper;
+﻿using Dapper;
 using myhw.Models;
 using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
-using System.Reflection;
 
 namespace myhw.Repository
 {
@@ -13,32 +11,25 @@ namespace myhw.Repository
     {
         private readonly string connectionString = @"Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=LOG;Integrated Security=True;";
 
-        public MessageRepository( )
+        public List<MessageDataModel> GetAllMessages(string username)
         {
-        }
-
-        public List<MessageDataModel> GetAllMessages(MemoryDataModel model)
-        {
-          
             try
             {
                 using (SqlConnection connection = new SqlConnection(connectionString))
                 {
                     connection.Open();
 
-                    string query = "SELECT Content.UserId , Content.Username , Users.Email , Content.Content , Users.CreatedAt as time FROM Content JOIN Users ON Content.UserId = Users.UserId WHERE Users.Username = @Username;";
-                    var storedPName = connection.Query<MessageDataModel>(query, new { Username = model.Username }).ToList();
+                    string query = "SELECT Content.ContentId, Content.Username, Users.Email, Content.Content, Users.CreatedAt as Time FROM Content JOIN Users ON Content.Username = Users.Username";
+                    var storedPName = connection.Query<MessageDataModel>(query, new { Username = username }).ToList();
                     return storedPName;
                 }
             }
             catch (Exception ex)
             {
-                // Handle or log the exception
                 Console.WriteLine($"Error in GetAllMessages: {ex.Message}");
                 return new List<MessageDataModel>();
             }
         }
-
 
         public List<MessageDataModel> GetMessagesByName(string name)
         {
@@ -49,51 +40,47 @@ namespace myhw.Repository
                     connection.Open();
 
                     string query = "SELECT * FROM Content WHERE UserName LIKE @Name";
-
-                    // 使用 Dapper 的 Query 方法，直接映射到 MessageDataModel
                     var messages = connection.Query<MessageDataModel>(query, new { Name = "%" + name + "%" }).ToList();
-
                     return messages;
                 }
             }
             catch (Exception ex)
             {
-                
                 Console.WriteLine($"Error in GetMessagesByName: {ex.Message}");
                 return new List<MessageDataModel>();
             }
         }
 
-
-        public void AddMessage(MessageDataModel message)
+        public void AddMessage(MessageDataModel message, string logInUsername)
         {
-            try
+            using (SqlConnection connection = new SqlConnection(connectionString))
             {
-                using (SqlConnection connection = new SqlConnection(connectionString))
+                connection.Open();
+                using (var transaction = connection.BeginTransaction())
                 {
-                    connection.Open();
-
-                    string query = "INSERT INTO Content(Username, Email, Content, Timestamp) " +
-                                   "VALUES ((SELECT UserId FROM Users WHERE Username = @Username),@Username, @Email, @Content, @Timestamp)";
-
-                    // 使用 Dapper 的 Execute 方法
-                    connection.Execute(query, new
+                    try
                     {
-                        message.Username,
-                        message.Email,
-                        message.Content,
-                        message.Timestamp
-                    });
+                        string query = "INSERT INTO Content(Username, Content) " +
+                                       "VALUES ((SELECT UserId FROM Users WHERE Username=@Username), @Username, @Content)";
+
+                        connection.Execute(query, new
+                        {
+                            Username = logInUsername,
+                            message.Content,
+                        }, transaction);
+
+                        transaction.Commit();
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error in AddMessageWithTransaction: {ex.Message}");
+                        transaction.Rollback();
+                    }
                 }
             }
-            catch (Exception ex)
-            {
-                // Handle or log the exception
-                Console.WriteLine($"Error in AddMessage: {ex.Message}");
-            
-            }
         }
-        public MessageDataModel GetMessageById(int userId)
+
+        public MessageDataModel GetMessageByName(int userId)
         {
             try
             {
@@ -109,7 +96,7 @@ namespace myhw.Repository
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error in GetMessageById: {ex.Message}");
+                Console.WriteLine($"Error in GetMessageByName: {ex.Message}");
                 return null;
             }
         }
@@ -122,8 +109,9 @@ namespace myhw.Repository
                 {
                     connection.Open();
 
-                    string query = "UPDATE Content SET Content = @Content WHERE UserId = @UserId";
-                    connection.Execute(query, new { message.Content, message.UserId });
+                    string query = "UPDATE Content SET Content = @Content WHERE ContentId = @ContentId";
+
+                    connection.Execute(query, new { message.Content, message.ContentId });
                 }
             }
             catch (Exception ex)
@@ -132,7 +120,8 @@ namespace myhw.Repository
             }
         }
 
-        public void DeleteMessage(int userId)
+
+        public void DeleteMessage(int ContentId)
         {
             try
             {
@@ -140,8 +129,8 @@ namespace myhw.Repository
                 {
                     connection.Open();
 
-                    string query = "DELETE FROM Content WHERE UserId = @UserId";
-                    connection.Execute(query, new { UserId = userId });
+                    string query = "DELETE FROM Content WHERE ContentId = @ContentId";
+                    connection.Execute(query, new { ContentId });
                 }
             }
             catch (Exception ex)

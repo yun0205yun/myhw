@@ -8,6 +8,7 @@ namespace myhw.Models
 {
     public class MessageDataModel
     {
+        public int ContentId { get; set; }
         public int UserId { get; set; }
         /// <summary>
         /// 姓名

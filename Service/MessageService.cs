@@ -14,12 +14,11 @@ namespace myhw.Service
             _repository = new MessageRepository();
         }
 
-        public List<MessageDataModel> GetAllMessages(MemoryDataModel model)
+        public List<MessageDataModel> GetAllMessages(string username, int? page, int pageSize)
         {
-           
             try
             {
-                return _repository.GetAllMessages(model);
+                return _repository.GetAllMessages(username);
             }
             catch (Exception ex)
             {
@@ -43,12 +42,14 @@ namespace myhw.Service
             }
         }
 
-        public void AddMessage(MessageDataModel message)
+        public void AddMessage(MessageDataModel message,string logInUsername)
         {
             try
-            {
+            { 
+                //設置留言的用戶名
+               // message.Username  = logInUsername;
                 message.Timestamp = DateTime.Now;
-                _repository.AddMessage(message);
+                _repository.AddMessage(message,logInUsername);
             }
             catch (Exception ex)
             {
@@ -56,11 +57,11 @@ namespace myhw.Service
                 
             }
         }
-        public MessageDataModel GetMessageById(int userId) 
+        public MessageDataModel GetMessageByName(int ContentId) 
         {
             try
             {
-                return _repository.GetMessageById(userId);
+                return _repository.GetMessageByName(ContentId);
             }
             catch (Exception ex)
             {
@@ -82,18 +83,20 @@ namespace myhw.Service
             }
         }
 
-        public void DeleteMessage(int userId)
+
+        public void DeleteMessage(int ContentId)
         {
             try
             {
-                // 從資料庫中刪除留言
-                _repository.DeleteMessage(userId);
+                // 删除数据库中的留言
+                _repository.DeleteMessage(ContentId);
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error in DeleteMessage: {ex.Message}");
             }
         }
+
 
     }
 }
