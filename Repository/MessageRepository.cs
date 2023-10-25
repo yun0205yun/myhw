@@ -4,24 +4,41 @@ using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
+using System.Web.UI.WebControls;
+using System.Web.SessionState;
+ 
 
 namespace myhw.Repository
 {
     public class MessageRepository
     {
-        private readonly string connectionString = @"Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=LOG;Integrated Security=True;";
+        private readonly string _connectionString;
+
+        public MessageRepository(string connectionString)
+        {
+            _connectionString = connectionString;
+        }
+
+        // 不建議提供無參數建構函式，除非你確定它是有用的
+        // public MessageRepository()
+        // {
+        // }
 
         public List<MessageDataModel> GetAllMessages(string username)
         {
             try
             {
-                using (SqlConnection connection = new SqlConnection(connectionString))
+                using (var connection = new SqlConnection(_connectionString))
                 {
                     connection.Open();
 
-                    string query = "SELECT Content.ContentId, Content.Username, Users.Email, Content.Content, Users.CreatedAt as Time FROM Content JOIN Users ON Content.Username = Users.Username";
-                    var storedPName = connection.Query<MessageDataModel>(query, new { Username = username }).ToList();
-                    return storedPName;
+                    string query = @"
+                       SELECT Content.UserId, Users.Username, Content.Content, Users.CreatedAt
+                        FROM Content
+                        JOIN Users ON Content.UserId = Users.UserId";
+
+                    var messages = connection.Query<MessageDataModel>(query, new { Username = username }).ToList();
+                    return messages;
                 }
             }
             catch (Exception ex)
@@ -35,56 +52,92 @@ namespace myhw.Repository
         {
             try
             {
-                using (SqlConnection connection = new SqlConnection(connectionString))
+                using (var connection = new SqlConnection(_connectionString))
                 {
                     connection.Open();
 
-                    string query = "SELECT * FROM Content WHERE UserName LIKE @Name";
-                    var messages = connection.Query<MessageDataModel>(query, new { Name = "%" + name + "%" }).ToList();
+                    // 明確指定列的順序，確保與 MessageDataModel 類型的屬性順序一致
+                    string query = "SELECT ContentId, Username, Email, Content, CreatedAt as Time  FROM Content " +
+                                   "JOIN Users ON Content.UserId = Users.UserId " +
+                                   "WHERE UserName = @Name";
+
+                    var messages = connection.Query<MessageDataModel>(query, new { Name = name }).ToList();
                     return messages;
                 }
             }
             catch (Exception ex)
             {
+                // 記錄異常信息
                 Console.WriteLine($"Error in GetMessagesByName: {ex.Message}");
-                return new List<MessageDataModel>();
+                // 可以將異常拋出，讓上層調用者處理，也可以返回空列表，視情況而定
+                throw;
             }
         }
 
-        public void AddMessage(MessageDataModel message, string logInUsername)
+
+
+        public void AddMessage(CreateModel message, HttpSessionState session)
         {
-            using (SqlConnection connection = new SqlConnection(connectionString))
+            // 檢查參數是否為空
+            if (message == null || session == null)
             {
-                connection.Open();
-                using (var transaction = connection.BeginTransaction())
+                Console.WriteLine("Invalid parameters. Message not added.");
+                return;
+            }
+
+            try
+            {
+                // 從會話中獲取用戶名
+                string username = session["Username"] as string;
+
+                // 檢查用戶名是否存在
+                if (!string.IsNullOrEmpty(username))
                 {
-                    try
-                    {
-                        string query = "INSERT INTO Content(Username, Content) " +
-                                       "VALUES ((SELECT UserId FROM Users WHERE Username=@Username), @Username, @Content)";
+                    // 使用一個複合的 SQL 查詢，直接從 Users 表中獲取 UserId 並插入留言
+                    string insertQuery = @"
+                INSERT INTO Content(UserId, Content) 
+                SELECT UserId, @Content FROM Users WHERE Username = @Username";
 
-                        connection.Execute(query, new
+                    // 執行 SQL 查詢並獲取受影響的行數
+                    using (var connection = new SqlConnection(_connectionString))
+                    {
+                        connection.Open();
+
+                        int rowsAffected = connection.Execute(insertQuery, new
                         {
-                            Username = logInUsername,
-                            message.Content,
-                        }, transaction);
+                            Username = username,
+                            message.Content
+                        });
 
-                        transaction.Commit();
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Error in AddMessageWithTransaction: {ex.Message}");
-                        transaction.Rollback();
+                        // 檢查是否成功插入留言
+                        if (rowsAffected > 0)
+                        {
+                            Console.WriteLine("Message added successfully.");
+                        }
+                        else
+                        {
+                            Console.WriteLine($"未找到用戶名 {username} 對應的用戶。");
+                        }
                     }
                 }
+                else
+                {
+                    Console.WriteLine("在會話中未找到用戶名。");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"在 AddMessage 中出錯: {ex.Message}");
             }
         }
+
+
 
         public MessageDataModel GetMessageByName(int userId)
         {
             try
             {
-                using (SqlConnection connection = new SqlConnection(connectionString))
+                using (var connection = new SqlConnection(_connectionString))
                 {
                     connection.Open();
 
@@ -105,7 +158,7 @@ namespace myhw.Repository
         {
             try
             {
-                using (SqlConnection connection = new SqlConnection(connectionString))
+                using (var connection = new SqlConnection(_connectionString))
                 {
                     connection.Open();
 
@@ -120,17 +173,16 @@ namespace myhw.Repository
             }
         }
 
-
-        public void DeleteMessage(int ContentId)
+        public void DeleteMessage(int contentId)
         {
             try
             {
-                using (SqlConnection connection = new SqlConnection(connectionString))
+                using (var connection = new SqlConnection(_connectionString))
                 {
                     connection.Open();
 
                     string query = "DELETE FROM Content WHERE ContentId = @ContentId";
-                    connection.Execute(query, new { ContentId });
+                    connection.Execute(query, new { ContentId = contentId });
                 }
             }
             catch (Exception ex)
@@ -138,6 +190,5 @@ namespace myhw.Repository
                 Console.WriteLine($"Error in DeleteMessage: {ex.Message}");
             }
         }
-
     }
 }

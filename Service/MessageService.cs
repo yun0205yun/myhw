@@ -2,6 +2,8 @@
 using myhw.Repository;
 using System;
 using System.Collections.Generic;
+using System.Web.SessionState;
+using System.Web.UI.WebControls;
 
 namespace myhw.Service
 {
@@ -9,9 +11,15 @@ namespace myhw.Service
     {
         private readonly MessageRepository _repository;
 
-        public MessageService()
+        public object Session { get; private set; }
+
+        public MessageService(MessageRepository repository)
         {
-            _repository = new MessageRepository();
+            _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+        }
+        public MessageService(string connectionString)
+        {
+            _repository = new MessageRepository(connectionString);
         }
 
         public List<MessageDataModel> GetAllMessages(string username, int? page, int pageSize)
@@ -36,28 +44,51 @@ namespace myhw.Service
             }
             catch (Exception ex)
             {
-               
+
                 Console.WriteLine($"Error in GetMessagesByName: {ex.Message}");
-                return null; 
+                return null;
             }
         }
 
-        public void AddMessage(MessageDataModel message,string logInUsername)
+        public void AddMessage(CreateModel message, HttpSessionState session)
         {
             try
-            { 
-                //設置留言的用戶名
-               // message.Username  = logInUsername;
-                message.Timestamp = DateTime.Now;
-                _repository.AddMessage(message,logInUsername);
+            {
+                if (session != null && session["UserId"] != null)
+                {
+                    int userId = Convert.ToInt32(session["UserId"]);
+                    message.UserId = userId;
+                    message.Timestamp = DateTime.Now;
+
+                    // 調用相應的 _repository.AddMessage 方法，將 message 對象添加到數據庫
+                    _repository.AddMessage(message, session);
+                }
+                else
+                {
+                    // 在實際應用中，這可能會被改寫為向日誌系統輸出警告。
+                    Console.WriteLine("User not logged in. Message not added.");
+                }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error in AddMessage: {ex.Message}");
-                
+                HandleException(ex, "AddMessage");
             }
         }
-        public MessageDataModel GetMessageByName(int ContentId) 
+
+
+
+
+
+        private void HandleException(Exception ex, string methodName)
+        {
+            // 在實際應用中，你可能希望使用日誌庫來記錄異常。
+            Console.WriteLine($"Error in {methodName}: {ex.Message}");
+
+            
+        }
+
+
+        public MessageDataModel GetMessageByName(int ContentId)
         {
             try
             {
@@ -96,7 +127,5 @@ namespace myhw.Service
                 Console.WriteLine($"Error in DeleteMessage: {ex.Message}");
             }
         }
-
-
     }
 }

@@ -44,6 +44,8 @@ namespace myhw.Controllers
             if (user.IsLoginSuccessful)
             {
                 // 在 Session 中設置使用者資訊
+                Session["UserId"] = user.UserId; // 假設您的 User 對象中有一個 UserId 屬性
+                // 在 Session 中設置使用者資訊
                 Session["Username"] = model.Username; // 請根據 User 物件中的實際屬性進行替換
 
                 // 如果勾選了 "RememberMe"，則設置 Cookie
