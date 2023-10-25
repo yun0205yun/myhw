@@ -46,9 +46,9 @@ else
                 <td>
                     @if (Session["Username"] != null && Session["Username"].ToString() == message.Username)
                     {
-                        <button class="edit-btn" data-user-id="@message.UserId">編輯</button>
+                        <button class="edit-btn" data-content-id="@message.UserId">編輯</button>
                         <button class="save-btn" style="display: none;">完成</button>
-                        @Html.ActionLink("刪除", "Delete", new { id = message.UserId }, new { @class = "delete-btn", data_user_id = message.UserId })
+                        @Html.ActionLink("刪除", "Delete", new { id = message.UserId }, new { @class = "delete-btn", data_content_id = message.UserId })
                     }
                     else
                     {
@@ -91,25 +91,26 @@ else
             // 保存按钮点击事件
             $(".save-btn").click(function () {
                 var row = $(this).closest("tr");
-                var contentId = row.find(".edit-btn").data("content-id"); // 使用 data-content-id 属性获取 contentId
+                var contentId = row.find(".edit-btn").data("content-id"); // 使用  content-id 属性获取 contentId
                 var editedContent = row.find(".edit-content").val();
 
                 // 使用 Ajax 将修改后的内容提交到后端进行保存
                 $.ajax({
                     type: "POST",
                     url: "/Message/UpdateMessage",
-                    data: { contentId: contentId, content: editedContent }, // 使用 contentId 作为参数
-                    success: function () {
-                        // 更新成功后的处理
-                        row.find(".message-content").text(editedContent);
-                        row.find(".message-content").show();
-                        row.find(".edit-content").hide();
-                        row.find(".edit-btn").show();
-                        row.find(".save-btn").hide();
+                    data: { ContentId: contentId, content: editedContent },
+                    success: function (response) {
+                        if (response.success) {
+                            // 成功的处理逻辑
+                            alert("操作成功：" + response.message);
+                        } else {
+                            // 失败的处理逻辑
+                            alert("操作失敗：" + response.message);
+                        }
                     },
                     error: function () {
-                        // 更新失败后的处理
-                        alert("編輯失敗");
+                        // 异常处理逻辑
+                        alert("發生錯誤");
                     }
                 });
             });

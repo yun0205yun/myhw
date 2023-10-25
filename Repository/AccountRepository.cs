@@ -19,17 +19,18 @@ namespace myhw.Repository
                 {
                     connection.Open();
 
-                    var query = "SELECT Password FROM Users WHERE Username = @Username";
-                    var storedPassword = connection.QuerySingleOrDefault<string>(query, new { Username = model.Username });
+                    var query = "SELECT * FROM Users WHERE Username = @Username";
+                    var dbData = connection.QuerySingleOrDefault<UserDataModel>(query, new { Username = model.Username });
 
                     // 驗證輸入的密碼
-                    if (storedPassword != null && VerifyPassword(model.Password, storedPassword))
+                    if (dbData?.Password != null && VerifyPassword(model.Password, dbData.Password))
                     {
                         return new MemoryDataModel
                         { 
-                            Password = storedPassword,
+                            Password = dbData.Password,
                             IsLoginSuccessful = true,
                             Username = model.Username,
+
                         };
                     }
 
