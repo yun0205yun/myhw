@@ -1,22 +1,24 @@
 ﻿using myhw.Helpers;
 using myhw.Models;
+using myhw.Repository;
 using myhw.Service;
 using PagedList;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Web.Mvc;
 using System.Web.SessionState;
 
 public class MessageController : Controller
 {
     private readonly MessageService _messageService;
-    
 
-    public MessageController(MessageService messageService  )
+
+    public MessageController(MessageService messageService)
     {
         _messageService = messageService ?? throw new ArgumentNullException(nameof(messageService));
     }
-    public MessageController()
+       public MessageController()
     {
         string connectionString = @"Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=LOG;Integrated Security=True;";
         _messageService = new MessageService(connectionString);
@@ -67,32 +69,30 @@ public class MessageController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public ActionResult Create(CreateModel createModel, HttpSessionState session)
+    public ActionResult Create(CreateModel createModel)
     {
-        if (Session["UserId"] == null)
+
+         if (Session["UserId"] == null)
         {
-            return RedirectToAction("Log", "Account");
-        } 
+           return RedirectToAction("Log", "Account");
+        }
         try
         {
-             
-                // 獲取已登錄使用者的名稱
-                string username = session["Username"].ToString();
- 
+            int UserId =(int) Session["UserId"];
 
-                // 建立一個新的留言物件
-                var newMessage = new CreateModel
-                {
-                    // 不需要再指定 UserId，因為您已經從已登錄的使用者中取得
-                    Content = createModel.Content,
-                    Timestamp = DateTime.Now
-                };
+            // 建立一個新的留言物件
+            var newMessage = new CreateModel
+            {    
+                UserId = UserId,
+                Content = createModel.Content,
+                Timestamp = DateTime.Now
+            };
 
-                // 調用 _messageService.AddMessage 方法將留言添加到數據庫
-                _messageService.AddMessage(newMessage, session);
+            // 調用 _messageService.AddMessage 方法將留言添加到數據庫
+            _messageService.AddMessage(newMessage);
 
-                return RedirectToAction("Front", "Message");
-            
+            return RedirectToAction("Front", "Message");
+
         }
         catch (Exception ex)
         {
@@ -108,16 +108,17 @@ public class MessageController : Controller
     [HttpPost]
     public ActionResult UpdateMessage(int ContentId, string content)
     {
+        
         try
         {
             // 檢查是否有使用者登錄
-            if (Session["Username"] != null)
+            if (Session["UserId"] != null)
             {
                 var message = _messageService.GetMessageByName(ContentId);
 
-                if (message == null || Session["Username"].ToString() != message.Username)
+                if (message == null || Session["UserId"].ToString() != message.UserId.ToString())
                 {
-                    return Json(new ApiResponse<string> { Success = false, Message = "没有权限更新留言" });
+                    return Json(new ApiResponse<string> { Success = false, Message = "没有權限更新留言" });
                 }
                 else
                 {
@@ -130,44 +131,48 @@ public class MessageController : Controller
             }
             else
             {
-                return Json(new ApiResponse<string> { Success = false, Message = "用户未登录" });
+                return Json(new ApiResponse<string> { Success = false, Message = "用戶未登入" });
             }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error in UpdateMessage action: {ex.Message}");
-            return Json(new ApiResponse<string> { Success = false, Message = "更新留言失败" });
+            return Json(new ApiResponse<string> { Success = false, Message = "更新留言失敗" });
         }
     }
 
     [HttpPost]
-    public ActionResult DeleteMessage(int userId)
+    public ActionResult DeleteMessage(int contentId)
     {
         try
         {
             // 檢查是否有使用者登錄
-            if (Session["Username"] != null)
+            if (Session["UserId"] != null)
             {
-                var message = _messageService.GetMessageByName(userId);
-                if (message != null && Session["Username"].ToString() == message.Username)
+                 
+                var message = _messageService.GetMessageByName(contentId);
+                Debug.WriteLine($"Session UserId: {Session["UserId"]}");//明天檢查
+                Debug.WriteLine($"Message UserId: {message.UserId}");
+
+                if (message != null && Convert.ToInt32(Session["UserId"]) == message.UserId)
                 {
-                    _messageService.DeleteMessage(userId);
-                    return Json(new { success = true });
+                    _messageService.DeleteMessage(contentId);
+                    return Json(new { Success = true, Message = "刪除留言成功", DeletedMessageId = contentId });
                 }
                 else
                 {
-                    return Json(new { success = false, message = "没有权限删除留言" });
+                    return Json(new { Success = false, Message = "没有權限刪除留言" });//怎麼跑到這了
                 }
             }
             else
             {
-                return Json(new ApiResponse<string> { Success = false, Message = "用户未登录" });
+                return Json(new ApiResponse<int> { Success = false, Message = "用戶未登入" });
             }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error in DeleteMessage action: {ex.Message}");
-            return Json(new { success = false, message = "删除留言失败" });
+            return Json(new ApiResponse<int> { Success = false, Message = "刪除留言失敗" });
         }
     }
 
