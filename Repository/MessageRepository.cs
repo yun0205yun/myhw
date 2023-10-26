@@ -6,7 +6,7 @@ using System.Data.SqlClient;
 using System.Linq;
 using System.Web.UI.WebControls;
 using System.Web.SessionState;
- 
+using System.Web;
 
 namespace myhw.Repository
 {
@@ -18,11 +18,7 @@ namespace myhw.Repository
         {
             _connectionString = connectionString;
         }
-
-        // 不建議提供無參數建構函式，除非你確定它是有用的
-        // public MessageRepository()
-        // {
-        // }
+ 
 
         public List<MessageDataModel> GetAllMessages(string username)
         {
@@ -76,27 +72,17 @@ namespace myhw.Repository
 
 
 
-        public void AddMessage(CreateModel message, HttpSessionState session)
+        public void AddMessage(CreateModel message)
         {
-            // 檢查參數是否為空
-            if (message == null || session == null)
-            {
-                Console.WriteLine("Invalid parameters. Message not added.");
-                return;
-            }
+           
 
             try
             {
-                // 從會話中獲取用戶名
-                string username = session["Username"] as string;
-
-                // 檢查用戶名是否存在
-                if (!string.IsNullOrEmpty(username))
-                {
+                 
+               
                     // 使用一個複合的 SQL 查詢，直接從 Users 表中獲取 UserId 並插入留言
                     string insertQuery = @"
-                INSERT INTO Content(UserId, Content) 
-                SELECT UserId, @Content FROM Users WHERE Username = @Username";
+                    INSERT INTO Content(UserId, Content) VALUES (@UserId,@Content)";
 
                     // 執行 SQL 查詢並獲取受影響的行數
                     using (var connection = new SqlConnection(_connectionString))
@@ -105,7 +91,8 @@ namespace myhw.Repository
 
                         int rowsAffected = connection.Execute(insertQuery, new
                         {
-                            Username = username,
+                            
+                            message.UserId,
                             message.Content
                         });
 
@@ -116,14 +103,12 @@ namespace myhw.Repository
                         }
                         else
                         {
-                            Console.WriteLine($"未找到用戶名 {username} 對應的用戶。");
+                            Console.WriteLine($"未找到用戶名對應的用戶。");
                         }
                     }
-                }
-                else
-                {
-                    Console.WriteLine("在會話中未找到用戶名。");
-                }
+               
+                 
+                
             }
             catch (Exception ex)
             {

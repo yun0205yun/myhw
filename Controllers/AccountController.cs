@@ -121,7 +121,7 @@ namespace myhw.Controllers
             else
             {
                 // 使用者尚未登入，重定向到登入頁面
-                return RedirectToAction("Log","Account");
+                return RedirectToAction("Log", "Account");
             }
         }
 

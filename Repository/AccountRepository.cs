@@ -8,10 +8,10 @@ namespace myhw.Repository
     public class AccountRepository
     {
         private readonly string _connectionString = @"Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=LOG;Integrated Security=True;";
- 
+
 
         // 檢查登入是否成功
-        public MemoryDataModel  IsLoginSuccessful(LogViewModel model)
+        public MemoryDataModel IsLoginSuccessful(LogViewModel model)
         {
             try
             {
@@ -26,9 +26,10 @@ namespace myhw.Repository
                     if (dbData?.Password != null && VerifyPassword(model.Password, dbData.Password))
                     {
                         return new MemoryDataModel
-                        { 
+                        {
                             Password = dbData.Password,
                             IsLoginSuccessful = true,
+                            UserId=dbData.UserId,
                             Username = model.Username,
 
                         };
@@ -89,4 +90,3 @@ namespace myhw.Repository
         }
     }
 }
-
