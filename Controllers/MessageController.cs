@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Web.Mvc;
 using System.Web.SessionState;
+using System.Web.UI.WebControls;
 
 public class MessageController : Controller
 {
@@ -72,9 +73,9 @@ public class MessageController : Controller
     public ActionResult Create(CreateModel createModel)
     {
 
-         if (Session["UserId"] == null)
+        if (Session["Username"] == null)
         {
-           return RedirectToAction("Log", "Account");
+            return RedirectToAction("Log", "Account");
         }
         try
         {
@@ -122,7 +123,7 @@ public class MessageController : Controller
                 }
                 else
                 {
-                    message.Content = content;
+                     message.Content = content;
                     _messageService.UpdateMessage(message);
 
                     // 返回统一的响应
@@ -142,39 +143,45 @@ public class MessageController : Controller
     }
 
     [HttpPost]
-    public ActionResult DeleteMessage(int contentId)
+    public ActionResult DeleteMessage(int ContentId)
     {
         try
         {
-            // 檢查是否有使用者登錄
             if (Session["UserId"] != null)
             {
-                 
-                var message = _messageService.GetMessageByName(contentId);
-                Debug.WriteLine($"Session UserId: {Session["UserId"]}");//明天檢查
-                Debug.WriteLine($"Message UserId: {message.UserId}");
+                // 根據contentId得到消息
+                var message = _messageService.GetMessageByContentId(ContentId);
+                
+               
+                     
+                    // 檢查用戶是否有權刪除消息
+                    if (message!=null&&Session["UserId"].ToString() == message.UserId.ToString())
+                    {
+                        // 刪除消失
+                        _messageService.DeleteMessage(ContentId);
+                        return Json(new ApiResponse<int> { Success = true, Message = "刪除留言成功", Data = ContentId });
 
-                if (message != null && Convert.ToInt32(Session["UserId"]) == message.UserId)
-                {
-                    _messageService.DeleteMessage(contentId);
-                    return Json(new { Success = true, Message = "刪除留言成功", DeletedMessageId = contentId });
-                }
-                else
-                {
-                    return Json(new { Success = false, Message = "没有權限刪除留言" });//怎麼跑到這了
-                }
+     
+                    }
+                    else
+                    {
+                        return Json(new ApiResponse<string> { Success = false, Message = "没有權限刪除留言" });
+                    }
+                 
             }
             else
             {
-                return Json(new ApiResponse<int> { Success = false, Message = "用戶未登入" });
+                return Json(new ApiResponse<string> { Success = false, Message = "用戶未登入" });
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error in DeleteMessage action: {ex.Message}");
-            return Json(new ApiResponse<int> { Success = false, Message = "刪除留言失敗" });
+            Console.WriteLine($"DeleteMessage 操作發生錯誤: {ex.Message}");
+            return Json(new ApiResponse<string> { Success = false, Message = "刪除留言失敗" });
         }
     }
+
+
 
 
 }
