@@ -2,6 +2,7 @@
 using myhw.Repository;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace myhw.Service
 {
@@ -15,7 +16,7 @@ namespace myhw.Service
         }
         public MessageService(string connectionString)
         {
-             _repository = new MessageRepository(connectionString);
+            _repository = new MessageRepository(connectionString);
         }
 
         public List<MessageDataModel> GetAllMessages(string username, int? page, int pageSize)
@@ -50,10 +51,10 @@ namespace myhw.Service
         {
             try
             {
- 
-                    // 調用相應的 _repository.AddMessage 方法，將 message 對象添加到數據庫
-                    _repository.AddMessage(message );
-                
+
+                // 調用相應的 _repository.AddMessage 方法，將 message 對象添加到數據庫
+                _repository.AddMessage(message);
+
             }
             catch (Exception ex)
             {
@@ -87,6 +88,28 @@ namespace myhw.Service
                 return null;
             }
         }
+        public MessageDataModel GetMessageByContentId(int ContentId)
+        {
+            try
+            {
+                var message = _repository.GetMessageByContentId(ContentId);
+
+                if (message == null)
+                {
+                    Console.WriteLine($"ContentId 為 {ContentId} 的消息未找到");
+              
+                    message = new MessageDataModel();//改這裡
+                }
+
+                return message;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"在 GetMessageByContentId 中出錯: {ex.Message}");
+                return null;
+            }
+        }
+
         public void UpdateMessage(MessageDataModel message)
         {
             try
@@ -105,7 +128,6 @@ namespace myhw.Service
         {
             try
             {
-                // 删除数据库中的留言
                 _repository.DeleteMessage(ContentId);
             }
             catch (Exception ex)

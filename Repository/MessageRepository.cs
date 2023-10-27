@@ -7,6 +7,7 @@ using System.Linq;
 using System.Web.UI.WebControls;
 using System.Web.SessionState;
 using System.Web;
+using System.Diagnostics;
 
 namespace myhw.Repository
 {
@@ -18,7 +19,7 @@ namespace myhw.Repository
         {
             _connectionString = connectionString;
         }
- 
+
 
         public List<MessageDataModel> GetAllMessages(string username)
         {
@@ -29,7 +30,7 @@ namespace myhw.Repository
                     connection.Open();
 
                     string query = @"
-                       SELECT Content.UserId, Users.Username, Content.Content, Users.CreatedAt
+                       SELECT ContentId,Content.UserId, Users.Username, Content.Content, Users.CreatedAt
                         FROM Content
                         JOIN Users ON Content.UserId = Users.UserId";
 
@@ -55,7 +56,7 @@ namespace myhw.Repository
                     // 明確指定列的順序，確保與 MessageDataModel 類型的屬性順序一致
                     string query = "SELECT ContentId, Username, Email, Content, CreatedAt as Time  FROM Content " +
                                    "JOIN Users ON Content.UserId = Users.UserId " +
-                                   "WHERE UserName = @Name";
+                                   "WHERE UserName = @Name";//這裡要加ContentId
 
                     var messages = connection.Query<MessageDataModel>(query, new { Name = name }).ToList();
                     return messages;
@@ -74,41 +75,41 @@ namespace myhw.Repository
 
         public void AddMessage(CreateModel message)
         {
-           
+
 
             try
             {
-                 
-               
-                    // 使用一個複合的 SQL 查詢，直接從 Users 表中獲取 UserId 並插入留言
-                    string insertQuery = @"
+
+
+                // 使用一個複合的 SQL 查詢，直接從 Users 表中獲取 UserId 並插入留言
+                string insertQuery = @"
                     INSERT INTO Content(UserId, Content) VALUES (@UserId,@Content)";
 
-                    // 執行 SQL 查詢並獲取受影響的行數
-                    using (var connection = new SqlConnection(_connectionString))
+                // 執行 SQL 查詢並獲取受影響的行數
+                using (var connection = new SqlConnection(_connectionString))
+                {
+                    connection.Open();
+
+                    int rowsAffected = connection.Execute(insertQuery, new
                     {
-                        connection.Open();
 
-                        int rowsAffected = connection.Execute(insertQuery, new
-                        {
-                            
-                            message.UserId,
-                            message.Content
-                        });
+                        message.UserId,
+                        message.Content
+                    });
 
-                        // 檢查是否成功插入留言
-                        if (rowsAffected > 0)
-                        {
-                            Console.WriteLine("Message added successfully.");
-                        }
-                        else
-                        {
-                            Console.WriteLine($"未找到用戶名對應的用戶。");
-                        }
+                    // 檢查是否成功插入留言
+                    if (rowsAffected > 0)
+                    {
+                        Console.WriteLine("Message added successfully.");
                     }
-               
-                 
-                
+                    else
+                    {
+                        Console.WriteLine($"未找到用戶名對應的用戶。");
+                    }
+                }
+
+
+
             }
             catch (Exception ex)
             {
@@ -135,6 +136,27 @@ namespace myhw.Repository
             catch (Exception ex)
             {
                 Console.WriteLine($"Error in GetMessageByName: {ex.Message}");
+                return null;
+            }
+        }
+        public MessageDataModel GetMessageByContentId(int ContentId)
+        {
+            try
+            {
+
+                using (var connection = new SqlConnection(_connectionString))
+                {
+                    connection.Open();
+
+                    string query = "SELECT * FROM Content WHERE ContentId = @ContentId";
+                    var message = connection.QueryFirstOrDefault<MessageDataModel>(query, new { ContentId = ContentId });
+
+                    return message;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in GetMessageByContentId: {ex.Message}");
                 return null;
             }
         }
