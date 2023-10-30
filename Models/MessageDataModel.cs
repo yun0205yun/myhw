@@ -1,11 +1,14 @@
-﻿using System;
+﻿using PagedList;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Web;
+using Dapper.Contrib.Extensions;
 
 namespace myhw.Models
 {
+    
     public class MessageDataModel
     {
         public int ContentId { get; set; }
@@ -23,7 +26,7 @@ namespace myhw.Models
         /// </summary>
         public string Content { get; set; }
         public DateTime Timestamp { get; set; }
+        
 
-         
     }
 }

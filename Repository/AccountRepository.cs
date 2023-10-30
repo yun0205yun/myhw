@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using myhw.Models;
+using myhw.Service;
 using System;
 using System.Data.SqlClient;
 
@@ -9,7 +10,12 @@ namespace myhw.Repository
     {
         private readonly string _connectionString = @"Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=LOG;Integrated Security=True;";
 
+        private readonly ErrorLogService _errorLogService;
 
+        public AccountRepository()
+        {
+            _errorLogService = new ErrorLogService(_connectionString);
+        }
         // 檢查登入是否成功
         public MemoryDataModel IsLoginSuccessful(LogViewModel model)
         {
@@ -44,6 +50,10 @@ namespace myhw.Repository
             catch (Exception ex)
             {
                 Console.WriteLine($"登入失敗: {ex.Message}");
+
+                // 記錄錯誤日誌
+                _errorLogService.LogError($"Login failed. Exception: {ex.Message}");
+
                 return new MemoryDataModel
                 {
                     IsLoginSuccessful = false,
@@ -85,6 +95,10 @@ namespace myhw.Repository
             catch (Exception ex)
             {
                 Console.WriteLine($"註冊失敗: {ex.Message}");
+
+                // 記錄錯誤日誌
+                _errorLogService.LogError($"Registration failed. Exception: {ex.Message}");
+
                 return "註冊失敗";
             }
         }
