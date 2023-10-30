@@ -19,11 +19,11 @@ namespace myhw.Service
             _repository = new MessageRepository(connectionString);
         }
 
-        public List<MessageDataModel> GetAllMessages(string username, int? page, int pageSize)
+        public List<MessageDataModel> GetAllMessages(int? page, int pageSize)
         {
             try
             {
-                return _repository.GetAllMessages(username);
+               return _repository.GetPagedMessages(page ?? 1, pageSize);
             }
             catch (Exception ex)
             {
@@ -32,6 +32,7 @@ namespace myhw.Service
                 return new List<MessageDataModel>();
             }
         }
+         
 
         public List<MessageDataModel> GetMessagesByName(string name)
         {
@@ -69,7 +70,7 @@ namespace myhw.Service
         private void HandleException(Exception ex, string methodName)
         {
             // 在實際應用中，你可能希望使用日誌庫來記錄異常。
-            Console.WriteLine($"Error in {methodName}: {ex.Message}");
+            Console.WriteLine($"Error in {methodName}: {ex.Message}",ex);
 
 
         }
@@ -109,7 +110,20 @@ namespace myhw.Service
                 return null;
             }
         }
+        public List<MessageDataModel> GetPagedMessages(int? page, int pageSize)
+        {
+            try
+            {
+                return _repository.GetPagedMessages( page??1, pageSize);
+            }
+            catch (Exception ex)
+            {
 
+                HandleException(ex, "GetPagedMessages");
+
+                return null;
+            }
+        }
         public void UpdateMessage(MessageDataModel message)
         {
             try

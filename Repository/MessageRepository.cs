@@ -8,6 +8,8 @@ using System.Web.UI.WebControls;
 using System.Web.SessionState;
 using System.Web;
 using System.Diagnostics;
+using myhw.Service;
+using NPOI.SS.Formula.Functions;
 
 namespace myhw.Repository
 {
@@ -15,9 +17,13 @@ namespace myhw.Repository
     {
         private readonly string _connectionString;
 
+        private readonly ErrorLogService _errorLogService;
+
+
         public MessageRepository(string connectionString)
         {
             _connectionString = connectionString;
+            _errorLogService = new ErrorLogService(connectionString);
         }
 
 
@@ -44,6 +50,47 @@ namespace myhw.Repository
                 return new List<MessageDataModel>();
             }
         }
+
+        //分頁利用offset和fetch子句
+        public List<MessageDataModel> GetPagedMessages(int? page, int pageSize)
+        {
+            try
+            {
+                using (var connection = new SqlConnection(_connectionString))
+                {
+                    connection.Open();
+
+                    string query = @"
+                        SELECT ContentId, Username, Email, Content, CreatedAt as Time
+                        FROM Content
+                        JOIN Users ON Content.UserId = Users.UserId
+                        ORDER BY ContentId 
+                        OFFSET @Offset ROWS
+                        FETCH NEXT @PageSize ROWS ONLY;
+                    ";
+
+                    int offset = ((page ?? 1) - 1) * pageSize;
+
+                    var messages = connection.Query<MessageDataModel>(query, new { Offset = offset, PageSize = pageSize }).ToList();
+
+                    // 偵錯信息
+                    Console.WriteLine($"Query: {query}");
+                    Console.WriteLine($"Offset: {offset}, PageSize: {pageSize}");
+                    Console.WriteLine($"Retrieved {messages.Count} messages.");
+
+                    return messages;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in GetPagedMessages: {ex.Message}");
+                _errorLogService.LogError($"Error in GetPagedMessages: {ex.Message}");
+                return new List<MessageDataModel>();
+            }
+        }
+
+
+
 
         public List<MessageDataModel> GetMessagesByName(string name)
         {
@@ -75,12 +122,8 @@ namespace myhw.Repository
 
         public void AddMessage(CreateModel message)
         {
-
-
             try
             {
-
-
                 // 使用一個複合的 SQL 查詢，直接從 Users 表中獲取 UserId 並插入留言
                 string insertQuery = @"
                     INSERT INTO Content(UserId, Content) VALUES (@UserId,@Content)";
@@ -107,13 +150,13 @@ namespace myhw.Repository
                         Console.WriteLine($"未找到用戶名對應的用戶。");
                     }
                 }
-
-
-
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"在 AddMessage 中出錯: {ex.Message}");
+
+                // 記錄錯誤日誌
+                _errorLogService.LogError($"AddMessage failed. Exception: {ex.Message}");
             }
         }
 
@@ -160,6 +203,7 @@ namespace myhw.Repository
                 return null;
             }
         }
+         
 
         public void UpdateMessage(MessageDataModel message)
         {
