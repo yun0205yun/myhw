@@ -26,7 +26,6 @@ namespace myhw.Models
         /// </summary>
         public string Content { get; set; }
         public DateTime Timestamp { get; set; }
-        
-
+        public int TotalMessages { get; internal set; }
     }
 }

@@ -5,28 +5,26 @@ using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Web.UI.WebControls;
-using System.Web.SessionState;
-using System.Web;
-using System.Diagnostics;
 using myhw.Service;
-using NPOI.SS.Formula.Functions;
+
+
+
 
 namespace myhw.Repository
 {
     public class MessageRepository
     {
         private readonly string _connectionString;
-
         private readonly ErrorLogService _errorLogService;
 
-
-        public MessageRepository(string connectionString)
+        // 建構函式，接收連接字串和錯誤日誌服務
+        public MessageRepository(string connectionString, ErrorLogService errorLogService)
         {
             _connectionString = connectionString;
-            _errorLogService = new ErrorLogService(connectionString);
+            _errorLogService = errorLogService ?? throw new ArgumentNullException(nameof(errorLogService));
         }
 
-
+        // 獲取所有留言
         public List<MessageDataModel> GetAllMessages(string username)
         {
             try
@@ -50,9 +48,8 @@ namespace myhw.Repository
                 return new List<MessageDataModel>();
             }
         }
-
         //分頁利用offset和fetch子句
-        public List<MessageDataModel> GetPagedMessages(int? page, int pageSize)
+        public PagedMessagesResult GetPagedMessages(int? page, int pageSize)
         {
             try
             {
@@ -61,37 +58,54 @@ namespace myhw.Repository
                     connection.Open();
 
                     string query = @"
-                        SELECT ContentId, Username, Email, Content, CreatedAt as Time
-                        FROM Content
-                        JOIN Users ON Content.UserId = Users.UserId
-                        ORDER BY ContentId 
-                        OFFSET @Offset ROWS
-                        FETCH NEXT @PageSize ROWS ONLY;
-                    ";
+                            SELECT ContentId, Content.UserId, Username, Email, Content, CreatedAt as Time,
+                                   COUNT(*) OVER () as TotalMessages
+                            FROM Content
+                            JOIN Users ON Content.UserId = Users.UserId
+                            ORDER BY ContentId 
+                            OFFSET @Offset ROWS
+                            FETCH NEXT @PageSize ROWS ONLY;";
 
                     int offset = ((page ?? 1) - 1) * pageSize;
 
                     var messages = connection.Query<MessageDataModel>(query, new { Offset = offset, PageSize = pageSize }).ToList();
 
-                    // 偵錯信息
-                    Console.WriteLine($"Query: {query}");
-                    Console.WriteLine($"Offset: {offset}, PageSize: {pageSize}");
-                    Console.WriteLine($"Retrieved {messages.Count} messages.");
+                    // 獲取總紀錄數
+                    int totalMessages = messages.Any() ? messages.First().TotalMessages : 0;
 
-                    return messages;
+                    // 計算總頁數
+                    int totalPages = (int)Math.Ceiling((double)totalMessages / pageSize);
+
+                    return new PagedMessagesResult
+                    {
+                        CurrentPage = page ?? 1,
+                        PageSize = pageSize,
+                        TotalPages = totalPages,
+                        TotalMessages = totalMessages,
+                        Messages = messages
+                    };
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error in GetPagedMessages: {ex.Message}");
                 _errorLogService.LogError($"Error in GetPagedMessages: {ex.Message}");
-                return new List<MessageDataModel>();
+                return new PagedMessagesResult();
             }
+        }
+
+        public class PagedMessagesResult
+        {
+            public int CurrentPage { get; set; }
+            public int PageSize { get; set; }
+            public int TotalPages { get; set; }
+            public int TotalMessages { get; set; }
+            public List<MessageDataModel> Messages { get; set; }
         }
 
 
 
-
+        // 根據用戶名稱獲取留言
         public List<MessageDataModel> GetMessagesByName(string name)
         {
             try
@@ -101,7 +115,7 @@ namespace myhw.Repository
                     connection.Open();
 
                     // 明確指定列的順序，確保與 MessageDataModel 類型的屬性順序一致
-                    string query = "SELECT ContentId, Username, Email, Content, CreatedAt as Time  FROM Content " +
+                    string query = "SELECT ContentId, Content.UserId, Username, Email, Content, CreatedAt as Time FROM Content " +
                                    "JOIN Users ON Content.UserId = Users.UserId " +
                                    "WHERE UserName = @Name";//這裡要加ContentId
 
@@ -112,30 +126,25 @@ namespace myhw.Repository
             catch (Exception ex)
             {
                 // 記錄異常信息
-                Console.WriteLine($"Error in GetMessagesByName: {ex.Message}");
-                // 可以將異常拋出，讓上層調用者處理，也可以返回空列表，視情況而定
-                throw;
+                HandleException(ex, "GetMessagesByName");
+                return null;
             }
         }
 
-
-
+        // 新增留言
         public void AddMessage(CreateModel message)
         {
             try
             {
-                // 使用一個複合的 SQL 查詢，直接從 Users 表中獲取 UserId 並插入留言
                 string insertQuery = @"
                     INSERT INTO Content(UserId, Content) VALUES (@UserId,@Content)";
 
-                // 執行 SQL 查詢並獲取受影響的行數
                 using (var connection = new SqlConnection(_connectionString))
                 {
                     connection.Open();
 
                     int rowsAffected = connection.Execute(insertQuery, new
                     {
-
                         message.UserId,
                         message.Content
                     });
@@ -153,15 +162,11 @@ namespace myhw.Repository
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"在 AddMessage 中出錯: {ex.Message}");
-
-                // 記錄錯誤日誌
-                _errorLogService.LogError($"AddMessage failed. Exception: {ex.Message}");
+                HandleException(ex, "AddMessage");
             }
         }
 
-
-
+        // 根據用戶ID獲取留言
         public MessageDataModel GetMessageByName(int userId)
         {
             try
@@ -178,15 +183,16 @@ namespace myhw.Repository
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error in GetMessageByName: {ex.Message}");
+                HandleException(ex, "GetMessageByName");
                 return null;
             }
         }
+
+        // 根據留言ID獲取留言
         public MessageDataModel GetMessageByContentId(int ContentId)
         {
             try
             {
-
                 using (var connection = new SqlConnection(_connectionString))
                 {
                     connection.Open();
@@ -194,17 +200,24 @@ namespace myhw.Repository
                     string query = "SELECT * FROM Content WHERE ContentId = @ContentId";
                     var message = connection.QueryFirstOrDefault<MessageDataModel>(query, new { ContentId = ContentId });
 
+                    if (message == null)
+                    {
+                        Console.WriteLine($"Message with ContentId {ContentId} not found.");
+                        _errorLogService.LogError($"Message with ContentId {ContentId} not found.");
+                        message = new MessageDataModel(); // 改這裡
+                    }
+
                     return message;
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error in GetMessageByContentId: {ex.Message}");
+                HandleException(ex, "GetMessageByContentId");
                 return null;
             }
         }
-         
 
+        // 更新留言
         public void UpdateMessage(MessageDataModel message)
         {
             try
@@ -214,17 +227,17 @@ namespace myhw.Repository
                     connection.Open();
 
                     string query = "UPDATE Content SET Content = @Content WHERE ContentId = @ContentId";
-
                     connection.Execute(query, new { message.Content, message.ContentId });
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error in UpdateMessage: {ex.Message}");
+                HandleException(ex, "UpdateMessage");
             }
         }
 
-        public void DeleteMessage(int contentId)
+        // 刪除留言
+        public void DeleteMessage(int ContentId)
         {
             try
             {
@@ -233,13 +246,20 @@ namespace myhw.Repository
                     connection.Open();
 
                     string query = "DELETE FROM Content WHERE ContentId = @ContentId";
-                    connection.Execute(query, new { ContentId = contentId });
+                    connection.Execute(query, new { ContentId = ContentId });
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error in DeleteMessage: {ex.Message}");
+                HandleException(ex, "DeleteMessage");
             }
+        }
+
+        // 處理異常
+        private void HandleException(Exception ex, string methodName)
+        {
+            Console.WriteLine($"Error in {methodName}: {ex.Message}");
+            _errorLogService.LogError($"Error in {methodName}: {ex.Message}");
         }
     }
 }

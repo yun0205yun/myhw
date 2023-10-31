@@ -1,4 +1,5 @@
-﻿using myhw.Models;
+﻿using MvcPaging;
+using myhw.Models;
 using myhw.Repository;
 using System;
 using System.Collections.Generic;
@@ -9,31 +10,55 @@ namespace myhw.Service
     public class MessageService
     {
         private readonly MessageRepository _repository;
+        private readonly ErrorLogService _errorLogService;
 
-        public MessageService(MessageRepository repository)
+        // 依賴注入，注入 MessageRepository 和 ErrorLogService 的實例
+        public MessageService(MessageRepository repository, ErrorLogService errorLogService)
         {
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+            _errorLogService = errorLogService ?? throw new ArgumentNullException(nameof(errorLogService));
         }
+
+        // 以連接字串為參數的建構函式，用於直接建立 MessageRepository 和 ErrorLogService 的實例
         public MessageService(string connectionString)
         {
-            _repository = new MessageRepository(connectionString);
+            // 創建 ErrorLogService 實例
+            _errorLogService = new ErrorLogService(connectionString);
+
+            // 使用連接字串和 ErrorLogService 實例來創建 MessageRepository 實例
+            _repository = new MessageRepository(connectionString, _errorLogService);
         }
 
         public List<MessageDataModel> GetAllMessages(int? page, int pageSize)
         {
             try
             {
-               return _repository.GetPagedMessages(page ?? 1, pageSize);
+                return _repository.GetPagedMessages(page ?? 1, pageSize).Messages;
             }
             catch (Exception ex)
             {
-                //處理或記錄異常
-                Console.WriteLine($"Error in GetAllMessages: {ex.Message}");
-                return new List<MessageDataModel>();
+                HandleException(ex, "GetAllMessages");
+                return null;
             }
         }
-         
 
+
+        public List<MessageDataModel> GetPagedMessages(int ?page, int pageSize)
+        {
+            try
+            {
+                return _repository.GetPagedMessages(page??1, pageSize).Messages;
+            }
+            catch (Exception ex)
+            {
+
+                HandleException(ex, "GetPagedMessages");
+
+                throw;
+            }
+        }
+
+        // 依照名稱獲取留言
         public List<MessageDataModel> GetMessagesByName(string name)
         {
             try
@@ -42,20 +67,17 @@ namespace myhw.Service
             }
             catch (Exception ex)
             {
-
-                Console.WriteLine($"Error in GetMessagesByName: {ex.Message}");
+                HandleException(ex, "GetMessagesByName");
                 return null;
             }
         }
 
+        // 新增留言
         public void AddMessage(CreateModel message)
         {
             try
             {
-
-                // 調用相應的 _repository.AddMessage 方法，將 message 對象添加到數據庫
                 _repository.AddMessage(message);
-
             }
             catch (Exception ex)
             {
@@ -63,19 +85,7 @@ namespace myhw.Service
             }
         }
 
-
-
-
-
-        private void HandleException(Exception ex, string methodName)
-        {
-            // 在實際應用中，你可能希望使用日誌庫來記錄異常。
-            Console.WriteLine($"Error in {methodName}: {ex.Message}",ex);
-
-
-        }
-
-
+        // 依照 ContentId 獲取留言
         public MessageDataModel GetMessageByName(int ContentId)
         {
             try
@@ -84,11 +94,12 @@ namespace myhw.Service
             }
             catch (Exception ex)
             {
-
-                Console.WriteLine($"Error in GetMessagesByName: {ex.Message}");
+                HandleException(ex, "GetMessageByName");
                 return null;
             }
         }
+
+        // 依照 ContentId 獲取留言，若留言不存在，記錄到錯誤日誌中
         public MessageDataModel GetMessageByContentId(int ContentId)
         {
             try
@@ -98,46 +109,34 @@ namespace myhw.Service
                 if (message == null)
                 {
                     Console.WriteLine($"ContentId 為 {ContentId} 的消息未找到");
-              
-                    message = new MessageDataModel();//改這裡
+                    // 記錄到錯誤日誌
+                    _errorLogService.LogError($"ContentId 為 {ContentId} 的消息未找到");
+                    message = new MessageDataModel(); // 改這裡
                 }
 
                 return message;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"在 GetMessageByContentId 中出錯: {ex.Message}");
+                HandleException(ex, "GetMessageByContentId");
                 return null;
             }
         }
-        public List<MessageDataModel> GetPagedMessages(int? page, int pageSize)
-        {
-            try
-            {
-                return _repository.GetPagedMessages( page??1, pageSize);
-            }
-            catch (Exception ex)
-            {
 
-                HandleException(ex, "GetPagedMessages");
-
-                return null;
-            }
-        }
+        // 更新留言
         public void UpdateMessage(MessageDataModel message)
         {
             try
             {
-                // 更新資料庫中的留言
                 _repository.UpdateMessage(message);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error in UpdateMessage: {ex.Message}");
+                HandleException(ex, "UpdateMessage");
             }
         }
 
-
+        // 刪除留言
         public void DeleteMessage(int ContentId)
         {
             try
@@ -146,8 +145,15 @@ namespace myhw.Service
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error in DeleteMessage: {ex.Message}");
+                HandleException(ex, "DeleteMessage");
             }
+        }
+
+        // 處理異常的私有方法，將錯誤信息輸出到控制台並記錄到錯誤日誌中
+        private void HandleException(Exception ex, string methodName)
+        {
+            Console.WriteLine($"Error in {methodName}: {ex.Message}");
+            _errorLogService.LogError($"Error in {methodName}: {ex.Message}");
         }
     }
 }
