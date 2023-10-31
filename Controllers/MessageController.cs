@@ -1,19 +1,17 @@
 ﻿using myhw.Helpers;
 using myhw.Models;
-using myhw.Repository;
 using myhw.Service;
 using PagedList;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Web.Mvc;
-using System.Web.SessionState;
-using System.Web.UI.WebControls;
+
 
 public class MessageController : Controller
 {
     private readonly MessageService _messageService;
-
+ 
+    private readonly ErrorLogService _errorLogService;//error log
+ 
 
     public MessageController(MessageService messageService)
     {
@@ -23,6 +21,7 @@ public class MessageController : Controller
     {
         string connectionString = @"Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=LOG;Integrated Security=True;";
         _messageService = new MessageService(connectionString);
+        _errorLogService = new ErrorLogService(connectionString);//error log
     }
 
     public ActionResult Logout()
@@ -31,7 +30,7 @@ public class MessageController : Controller
         return RedirectToAction("Log", "Account");
     }
 
-    public ActionResult Front(string name, int? page)
+     public ActionResult Front(string name, int? page)
     {
         const int PageSize = 5;
 
@@ -43,6 +42,7 @@ public class MessageController : Controller
         var username = Session["Username"].ToString();
 
         IPagedList<MessageDataModel> paginatedMessages;
+       
 
         if (string.IsNullOrEmpty(name))
         {
@@ -59,6 +59,7 @@ public class MessageController : Controller
 
         return View(paginatedMessages);
     }
+
 
 
 
@@ -99,6 +100,7 @@ public class MessageController : Controller
         }
         catch (Exception ex)
         {
+            _errorLogService.LogError($"Error in MessageController: {ex.Message}");
             // 在實際應用中，你可能還需要進一步的錯誤處理，例如記錄到日誌或發送通知
             Console.WriteLine($"Create 操作出錯: {ex.Message}");
             ModelState.AddModelError("", "無法創建留言。");
@@ -139,6 +141,7 @@ public class MessageController : Controller
         }
         catch (Exception ex)
         {
+            _errorLogService.LogError($"Error in UpdateMessage action: {ex.Message}");
             Console.WriteLine($"Error in UpdateMessage action: {ex.Message}");
             return Json(new ApiResponse<string> { Success = false, Message = "更新留言失敗" });
         }
@@ -178,9 +181,13 @@ public class MessageController : Controller
         }
         catch (Exception ex)
         {
+            _errorLogService.LogError($"Error in UpdateMessage action: {ex.Message}");
             Console.WriteLine($"DeleteMessage 操作發生錯誤: {ex.Message}");
             return Json(new ApiResponse<string> { Success = false, Message = "刪除留言失敗" });
         }
     }
+
+
+
 
 }

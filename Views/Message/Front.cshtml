@@ -1,5 +1,8 @@
-﻿@using PagedList.Mvc
-@model PagedList.IPagedList<myhw.Models.MessageDataModel>
+﻿@model PagedList.IPagedList<myhw.Models.MessageDataModel>
+
+@using PagedList.Mvc;
+
+
 
 @{
     ViewBag.Title = "Message Board";
@@ -49,10 +52,6 @@ else
                         <button class="edit-btn" data-content-id="@message.UserId">編輯</button>
                         <button class="save-btn" style="display: none;">完成</button>
                         <button class="delete-btn" data-content-id="@message.ContentId">刪除</button>
-
-
-
-
                     }
                     else
                     {
@@ -62,9 +61,12 @@ else
             </tr>
         }
     </table>
-    <div class="pagination-container">
-        @Html.PagedListPager((PagedList.IPagedList)Model, page => Url.Action("Front", new { page }), PagedListRenderOptions.Classic)
+
+
+    <div id="PagedListContainer">
+        @Html.PagedListPager(Model, page => Url.Action("Front", new { page }))
     </div>
+
 }
 else
 {
@@ -76,14 +78,15 @@ else
 
 @section scripts {
     <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-ajax-unobtrusive/3.2.6/jquery.unobtrusive-ajax.min.js"></script>
     <script>
         $(document).ready(function () {
-            //獲取當前時間
+            // 獲取當前時間
             var currentTime = new Date();
             var formattedTime = currentTime.toLocaleString();
             $("#computerTime").text(formattedTime);
 
-
+            // 編輯按紐事件
             $(".edit-btn").click(function () {
                 var row = $(this).closest("tr");
                 row.find(".message-content").hide();
@@ -93,62 +96,49 @@ else
                 row.find(".save-btn").show();
             });
 
-
-            //保存按鈕點擊事件
             $(".save-btn").click(function () {
                 var row = $(this).closest("tr");
-                var contentId = row.find(".edit-btn").data("content-id"); // 使用 content-id 屬性獲取 contentId
+                var contentId = row.find(".edit-btn").data("content-id");
                 var editedContent = row.find(".edit-content").val();
 
-                // 使用 Ajax 將修改後的内容提交到後端進行保存
                 $.ajax({
                     type: "POST",
                     url: "/Message/UpdateMessage",
                     data: { contentId: contentId, content: editedContent },
                     success: function (response) {
-
                         if (response.Success) {
-
-                            alert("操作成功：" + response.Message);//這裡要注意大小寫的問題
-                            // 切換回編輯狀態
+                            alert("操作成功：" + response.Message);
                             row.find(".message-content").text(editedContent);
                             row.find(".message-content").show();
                             row.find(".edit-content").hide();
                             row.find(".edit-btn").show();
                             row.find(".save-btn").hide();
                         } else {
-
                             alert("操作失敗：" + response.Message);
                         }
                     },
                     error: function () {
-                        // 異常處理邏輯
                         alert("發生錯誤");
                     }
                 });
             });
 
-
-
-            // 刪除按鈕點擊事件
             $(".delete-btn").click(function () {
                 var row = $(this).closest("tr");
-                var contentId = $(this).data("content-id"); // 使用  content-id 屬性獲取contentId
-                console.log(contentId);
-                // 使用 Ajax 将 contentId 提交到後端進行刪除
+                var contentId = $(this).data("content-id");
+
                 $.ajax({
                     type: "POST",
                     url: "/Message/DeleteMessage",
-                    data: { contentId: contentId }, // 使用 contentId 作為參數
+                    data: { contentId: contentId },
                     success: function (response) {
-
                         if (response.Success) {
-                            // 刪除成功
                             row.remove();
                             alert("刪除成功：" + response.Message);
                             location.reload(); // 重新加載當前頁面
+                            //var pageUrl = '@Url.Action("Front")?page=' + page;
+                            //$('#PagedListContainer').load(pageUrl);
                         } else {
-                            // 刪除失敗
                             alert("刪除失敗：" + response.Message);
                         }
                     },
@@ -158,9 +148,7 @@ else
                 });
             });
 
-            // 創建留言
             $(".create-btn").click(function () {
-
                 window.location.href = '@Url.Action("Create", "Message")';
             });
         });

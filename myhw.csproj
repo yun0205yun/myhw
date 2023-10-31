@@ -77,6 +77,9 @@
     <Reference Include="Microsoft.IO.RecyclableMemoryStream, Version=2.3.2.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>packages\Microsoft.IO.RecyclableMemoryStream.2.3.2\lib\net462\Microsoft.IO.RecyclableMemoryStream.dll</HintPath>
     </Reference>
+    <Reference Include="MvcPaging, Version=2.1.13.46, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>packages\MvcPaging.2.1.13\lib\net40\MvcPaging.dll</HintPath>
+    </Reference>
     <Reference Include="NPOI.Core, Version=2.6.2.0, Culture=neutral, PublicKeyToken=0df73ec7942b34e1, processorArchitecture=MSIL">
       <HintPath>packages\NPOI.2.6.2\lib\net472\NPOI.Core.dll</HintPath>
     </Reference>
