@@ -1,8 +1,4 @@
-﻿@model PagedList.IPagedList<myhw.Models.MessageDataModel>
-
-@using PagedList.Mvc;
-
-
+﻿@model IPagedList<myhw.Models.MessageDataModel>
 
 @{
     ViewBag.Title = "Message Board";
@@ -61,17 +57,19 @@ else
             </tr>
         }
     </table>
-
-
     <div id="PagedListContainer">
-        @Html.PagedListPager(Model, page => Url.Action("Front", new { page }))
+        @Html.Pager(Model.PageSize,Model.PageIndex,Model.TotalItemCount)
     </div>
+
+
 
 }
 else
 {
     <p>没有可用的消息。</p>
 }
+
+
 
 <button class="create-btn btn btn-primary">Create Message</button>
 <p>@Html.ActionLink("Back to Messages", "Front", new { @class = "btn btn-secondary" })</p>
@@ -136,8 +134,7 @@ else
                             row.remove();
                             alert("刪除成功：" + response.Message);
                             location.reload(); // 重新加載當前頁面
-                            //var pageUrl = '@Url.Action("Front")?page=' + page;
-                            //$('#PagedListContainer').load(pageUrl);
+
                         } else {
                             alert("刪除失敗：" + response.Message);
                         }

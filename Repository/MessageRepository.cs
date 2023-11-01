@@ -1,116 +1,90 @@
 ﻿using Dapper;
 using myhw.Models;
+using myhw.Service;
 using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Web.UI.WebControls;
-using myhw.Service;
-
-
-
 
 namespace myhw.Repository
 {
     public class MessageRepository
     {
-        private readonly string _connectionString;
-        private readonly ErrorLogService _errorLogService;
-
-        // 建構函式，接收連接字串和錯誤日誌服務
-        public MessageRepository(string connectionString, ErrorLogService errorLogService)
-        {
-            _connectionString = connectionString;
-            _errorLogService = errorLogService ?? throw new ArgumentNullException(nameof(errorLogService));
-        }
-
-        // 獲取所有留言
-        public List<MessageDataModel> GetAllMessages(string username)
-        {
-            try
-            {
-                using (var connection = new SqlConnection(_connectionString))
-                {
-                    connection.Open();
-
-                    string query = @"
-                       SELECT ContentId,Content.UserId, Users.Username, Content.Content, Users.CreatedAt
-                        FROM Content
-                        JOIN Users ON Content.UserId = Users.UserId";
-
-                    var messages = connection.Query<MessageDataModel>(query, new { Username = username }).ToList();
-                    return messages;
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error in GetAllMessages: {ex.Message}");
-                return new List<MessageDataModel>();
-            }
-        }
         //分頁利用offset和fetch子句
         public PagedMessagesResult GetPagedMessages(int? page, int pageSize)
         {
             try
             {
-                using (var connection = new SqlConnection(_connectionString))
+                using (var connection = new SqlConnection())
                 {
                     connection.Open();
 
                     string query = @"
-                            SELECT ContentId, Content.UserId, Username, Email, Content, CreatedAt as Time,
-                                   COUNT(*) OVER () as TotalMessages
-                            FROM Content
-                            JOIN Users ON Content.UserId = Users.UserId
-                            ORDER BY ContentId 
-                            OFFSET @Offset ROWS
-                            FETCH NEXT @PageSize ROWS ONLY;";
+                          SELECT ContentId, Content.UserId, Username, Email, Content, CreatedAt as Time,
+                                 COUNT(*) OVER () as TotalMessages
+                          FROM Content
+                          JOIN Users ON Content.UserId = Users.UserId
+                          ORDER BY ContentId 
+                          OFFSET @Offset ROWS
+                          FETCH NEXT @PageSize ROWS ONLY;";
 
-                    int offset = ((page ?? 1) - 1) * pageSize;
 
-                    var messages = connection.Query<MessageDataModel>(query, new { Offset = offset, PageSize = pageSize }).ToList();
+                    int offset = ((page ?? 1) <= 0 ? 1 : (page ?? 1) - 1) * pageSize;//確保計算出的 offset 值不會小於 0
 
-                    // 獲取總紀錄數
-                    int totalMessages = messages.Any() ? messages.First().TotalMessages : 0;
-
-                    // 計算總頁數
-                    int totalPages = (int)Math.Ceiling((double)totalMessages / pageSize);
-
-                    return new PagedMessagesResult
+                    //這裡要改
+                    using (var multi = connection.QueryMultiple(query, new { Offset = offset, PageSize = pageSize }))
                     {
-                        CurrentPage = page ?? 1,
-                        PageSize = pageSize,
-                        TotalPages = totalPages,
-                        TotalMessages = totalMessages,
-                        Messages = messages
-                    };
+                        var messages = multi.Read<MessageDataModel>().ToList();
+
+                        // 計算總留言
+                        int totalMessages = messages?.FirstOrDefault()?.TotalMessages ?? 0;
+
+                        return new PagedMessagesResult
+                        {
+                            CurrentPage = page ?? 1,
+                            PageSize = pageSize,
+                            TotalMessages = totalMessages,
+                            Messages = messages
+                        };
+
+                    }
+
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error in GetPagedMessages: {ex.Message}");
-                _errorLogService.LogError($"Error in GetPagedMessages: {ex.Message}");
-                return new PagedMessagesResult();
+                ErrorLog.LogError($"Error in GetPagedMessages: {ex.Message}");
+                return new PagedMessagesResult
+                {
+                    ErrorMessage = ex.Message,
+                    ExceptionStackTrace = ex.StackTrace
+                };
             }
         }
 
         public class PagedMessagesResult
         {
+            public List<MessageDataModel> Messages { get; set; }
             public int CurrentPage { get; set; }
             public int PageSize { get; set; }
             public int TotalPages { get; set; }
             public int TotalMessages { get; set; }
-            public List<MessageDataModel> Messages { get; set; }
+            public string ErrorMessage { get; set; }
+            public string ExceptionStackTrace { get; set; }
+            // 與 PagedListPager 期望的屬性一致
+            public int PageNumber => CurrentPage;
+            public int PageCount => TotalPages;
+            public int TotalItemCount => TotalMessages;
         }
-
-
 
         // 根據用戶名稱獲取留言
         public List<MessageDataModel> GetMessagesByName(string name)
         {
             try
             {
-                using (var connection = new SqlConnection(_connectionString))
+                using (var connection = new SqlConnection())
                 {
                     connection.Open();
 
@@ -139,7 +113,7 @@ namespace myhw.Repository
                 string insertQuery = @"
                     INSERT INTO Content(UserId, Content) VALUES (@UserId,@Content)";
 
-                using (var connection = new SqlConnection(_connectionString))
+                using (var connection = new SqlConnection())
                 {
                     connection.Open();
 
@@ -171,7 +145,7 @@ namespace myhw.Repository
         {
             try
             {
-                using (var connection = new SqlConnection(_connectionString))
+                using (var connection = new SqlConnection())
                 {
                     connection.Open();
 
@@ -193,7 +167,7 @@ namespace myhw.Repository
         {
             try
             {
-                using (var connection = new SqlConnection(_connectionString))
+                using (var connection = new SqlConnection())
                 {
                     connection.Open();
 
@@ -203,7 +177,7 @@ namespace myhw.Repository
                     if (message == null)
                     {
                         Console.WriteLine($"Message with ContentId {ContentId} not found.");
-                        _errorLogService.LogError($"Message with ContentId {ContentId} not found.");
+                        ErrorLog.LogError($"Message with ContentId {ContentId} not found.");
                         message = new MessageDataModel(); // 改這裡
                     }
 
@@ -222,7 +196,7 @@ namespace myhw.Repository
         {
             try
             {
-                using (var connection = new SqlConnection(_connectionString))
+                using (var connection = new SqlConnection())
                 {
                     connection.Open();
 
@@ -241,7 +215,7 @@ namespace myhw.Repository
         {
             try
             {
-                using (var connection = new SqlConnection(_connectionString))
+                using (var connection = new SqlConnection())
                 {
                     connection.Open();
 
@@ -259,7 +233,7 @@ namespace myhw.Repository
         private void HandleException(Exception ex, string methodName)
         {
             Console.WriteLine($"Error in {methodName}: {ex.Message}");
-            _errorLogService.LogError($"Error in {methodName}: {ex.Message}");
+            ErrorLog.LogError($"Error in {methodName}: {ex.Message}");
         }
     }
 }

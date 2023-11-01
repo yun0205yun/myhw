@@ -13,6 +13,7 @@ namespace myhw.Controllers
 
         public ActionResult Log()
         {
+
             var model = new LogViewModel();
 
             // 檢查是否存在 "RememberMe" Cookie 並相應地設置模型
