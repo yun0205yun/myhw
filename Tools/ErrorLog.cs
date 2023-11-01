@@ -7,16 +7,16 @@ using System.Web;
 
 namespace myhw.Service
 {
-    public class ErrorLogService
+    static public class ErrorLog
     {
-        private readonly string _connectionString;
+        static string _connectionString = @"Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=LOG;Integrated Security=True;";
 
-        public ErrorLogService(string connectionString)
+        static ErrorLog()
         {
-            _connectionString = connectionString;
+           
         }
 
-        public void LogError(string errorMessage)
+        static public void LogError(string errorMessage)
         {
             try
             {

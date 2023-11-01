@@ -1,27 +1,19 @@
-﻿using myhw.Helpers;
+﻿using MvcPaging;
+using myhw.Helpers;
 using myhw.Models;
 using myhw.Service;
-using PagedList;
 using System;
 using System.Web.Mvc;
-
+using static myhw.Repository.MessageRepository;
 
 public class MessageController : Controller
 {
     private readonly MessageService _messageService;
  
-    private readonly ErrorLogService _errorLogService;//error log
  
-
-    public MessageController(MessageService messageService)
-    {
-        _messageService = messageService ?? throw new ArgumentNullException(nameof(messageService));
-    }
     public MessageController()
     {
-        string connectionString = @"Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=LOG;Integrated Security=True;";
-        _messageService = new MessageService(connectionString);
-        _errorLogService = new ErrorLogService(connectionString);//error log
+        _messageService = new MessageService();
     }
 
     public ActionResult Logout()
@@ -30,7 +22,7 @@ public class MessageController : Controller
         return RedirectToAction("Log", "Account");
     }
 
-     public ActionResult Front(string name, int? page)
+    public ActionResult Front(string name, int? page)
     {
         const int PageSize = 5;
 
@@ -41,29 +33,25 @@ public class MessageController : Controller
 
         var username = Session["Username"].ToString();
 
-        IPagedList<MessageDataModel> paginatedMessages;
-       
-
+        PagedMessagesResult paginatedMessages;
+        IPagedList<MessageDataModel> pages;
         if (string.IsNullOrEmpty(name))
         {
             // 調用 GetPagedMessages 方法
-            var messages = _messageService.GetPagedMessages(page ?? 1, PageSize);
-            paginatedMessages = messages.ToPagedList(page ?? 1, PageSize);
+            paginatedMessages = _messageService.GetPagedMessages(page,PageSize);
+            pages = paginatedMessages.Messages.ToPagedList(page.GetValueOrDefault(), PageSize, paginatedMessages.TotalMessages);
+             
         }
         else
         {
             // 調用 GetMessagesByName 方法
             var messages = _messageService.GetMessagesByName(name);
-            paginatedMessages = messages.ToPagedList(page ?? 1, PageSize);
+            pages =messages.ToPagedList(page.GetValueOrDefault(), PageSize, messages.Count);
+             
         }
 
-        return View(paginatedMessages);
+        return View(pages);
     }
-
-
-
-
-
 
 
     public ActionResult Create()
@@ -100,7 +88,7 @@ public class MessageController : Controller
         }
         catch (Exception ex)
         {
-            _errorLogService.LogError($"Error in MessageController: {ex.Message}");
+            ErrorLog.LogError($"Error in MessageController: {ex.Message}");
             // 在實際應用中，你可能還需要進一步的錯誤處理，例如記錄到日誌或發送通知
             Console.WriteLine($"Create 操作出錯: {ex.Message}");
             ModelState.AddModelError("", "無法創建留言。");
@@ -141,7 +129,7 @@ public class MessageController : Controller
         }
         catch (Exception ex)
         {
-            _errorLogService.LogError($"Error in UpdateMessage action: {ex.Message}");
+            ErrorLog.LogError($"Error in UpdateMessage action: {ex.Message}");
             Console.WriteLine($"Error in UpdateMessage action: {ex.Message}");
             return Json(new ApiResponse<string> { Success = false, Message = "更新留言失敗" });
         }
@@ -181,7 +169,7 @@ public class MessageController : Controller
         }
         catch (Exception ex)
         {
-            _errorLogService.LogError($"Error in UpdateMessage action: {ex.Message}");
+            ErrorLog.LogError($"Error in UpdateMessage action: {ex.Message}");
             Console.WriteLine($"DeleteMessage 操作發生錯誤: {ex.Message}");
             return Json(new ApiResponse<string> { Success = false, Message = "刪除留言失敗" });
         }

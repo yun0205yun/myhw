@@ -10,11 +10,11 @@ namespace myhw.Repository
     {
         private readonly string _connectionString = @"Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=LOG;Integrated Security=True;";
 
-        private readonly ErrorLogService _errorLogService;
+        //private readonly ErrorLogService _errorLogService;
 
         public AccountRepository()
         {
-            _errorLogService = new ErrorLogService(_connectionString);
+            //_errorLogService = new ErrorLogService();
         }
         // 檢查登入是否成功
         public MemoryDataModel IsLoginSuccessful(LogViewModel model)
@@ -52,7 +52,7 @@ namespace myhw.Repository
                 Console.WriteLine($"登入失敗: {ex.Message}");
 
                 // 記錄錯誤日誌
-                _errorLogService.LogError($"Login failed. Exception: {ex.Message}");
+                ErrorLog.LogError($"Login failed. Exception: {ex.Message}");
 
                 return new MemoryDataModel
                 {
@@ -97,7 +97,7 @@ namespace myhw.Repository
                 Console.WriteLine($"註冊失敗: {ex.Message}");
 
                 // 記錄錯誤日誌
-                _errorLogService.LogError($"Registration failed. Exception: {ex.Message}");
+                ErrorLog.LogError($"Registration failed. Exception: {ex.Message}");
 
                 return "註冊失敗";
             }
