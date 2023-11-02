@@ -1,10 +1,10 @@
-﻿using PagedList;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Web;
 using Dapper.Contrib.Extensions;
+using MvcPaging;
 
 namespace myhw.Models
 {
@@ -32,5 +32,7 @@ namespace myhw.Models
 
         public int TotalMessages { get; internal set; }
         public IPagedList<MessageDataModel> Messages { get; set; }
+     
+
     }
 }

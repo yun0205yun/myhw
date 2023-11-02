@@ -25,32 +25,32 @@ namespace myhw.Service
         {
             try
             {
+                PagedMessagesResult result = _repository.GetPagedMessages(page ?? 1, pageSize);
 
-                return  _repository.GetPagedMessages(page ?? 1, pageSize);
-
-               
-                
+                return result ?? new PagedMessagesResult { Messages = new List<MessageDataModel>() };
             }
             catch (Exception ex)
             {
                 HandleException(ex, "GetPagedMessages");
                 ErrorLog.LogError($"Error in GetPagedMessages: {ex.Message}");
-                return null;
+                return new PagedMessagesResult { Messages = new List<MessageDataModel>() };
             }
         }
 
- 
+
+
         // 依照名稱獲取留言
-        public List<MessageDataModel> GetMessagesByName(string name)
+        public PagedMessagesResult GetMessagesByName(string name, int? page, int pageSize)
         {
             try
             {
-                return _repository.GetMessagesByName(name);
+                return _repository.GetMessagesByName(name, page ?? 1, pageSize);
             }
             catch (Exception ex)
             {
                 HandleException(ex, "GetMessagesByName");
-                return null;
+                ErrorLog.LogError($"Error in GetMessagesByName: {ex.Message}");
+                return new PagedMessagesResult { Messages = new List<MessageDataModel>() };
             }
         }
 
@@ -67,12 +67,12 @@ namespace myhw.Service
             }
         }
 
-        // 依照 ContentId 獲取留言
-        public MessageDataModel GetMessageByName(int ContentId)
+        //編輯留言需要用
+        public MessageDataModel GetMessageByContent(int ContentId)
         {
             try
             {
-                return _repository.GetMessageByName(ContentId);
+                return _repository.GetMessageByContent(ContentId);
             }
             catch (Exception ex)
             {

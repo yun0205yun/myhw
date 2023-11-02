@@ -5,7 +5,10 @@
 }
 
 <h2>Message Board</h2>
-
+<div id="gridcontainer">
+    @Html.Partial("_ProductGrid", Model)<!--有錯-->
+</div>
+<!-- Partial _ProductGrid.cshtml view -->
 @using (Html.BeginForm("Front", "Message", FormMethod.Get))
 {
     <p>
@@ -58,9 +61,15 @@ else
         }
     </table>
     <div id="PagedListContainer">
-        @Html.Pager(Model.PageSize,Model.PageIndex,Model.TotalItemCount)
+        @if (ViewBag.name != null)
+        {
+            @Html.Pager(Model.PageSize, Model.PageIndex, Model.TotalItemCount, new AjaxOptions { UpdateTargetId = "gridcontainer" }).Options(O => O.AddRouteValue("name", ViewBag.name))
+        }
+        else
+        {
+            @Html.Pager(Model.PageSize, Model.PageIndex, Model.TotalItemCount, new AjaxOptions { UpdateTargetId = "gridcontainer" }).Options(o => o.Action("Front"))
+        }
     </div>
-
 
 
 }
@@ -72,7 +81,7 @@ else
 
 
 <button class="create-btn btn btn-primary">Create Message</button>
-<p>@Html.ActionLink("Back to Messages", "Front", new { @class = "btn btn-secondary" })</p>
+<p>@Html.ActionLink("回到全部留言", "Front", new { @class = "btn btn-secondary" })</p>
 
 @section scripts {
     <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>

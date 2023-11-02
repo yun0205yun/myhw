@@ -11,12 +11,15 @@ namespace myhw.Repository
 {
     public class MessageRepository
     {
+        string connectionString = @"Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=LOG;Integrated Security=True;";
         //分頁利用offset和fetch子句
         public PagedMessagesResult GetPagedMessages(int? page, int pageSize)
         {
             try
             {
-                using (var connection = new SqlConnection())
+                 
+
+                using (var connection = new SqlConnection(connectionString))
                 {
                     connection.Open();
 
@@ -32,13 +35,10 @@ namespace myhw.Repository
 
                     int offset = ((page ?? 1) <= 0 ? 1 : (page ?? 1) - 1) * pageSize;//確保計算出的 offset 值不會小於 0
 
-                    //這裡要改
-                    using (var multi = connection.QueryMultiple(query, new { Offset = offset, PageSize = pageSize }))
-                    {
-                        var messages = multi.Read<MessageDataModel>().ToList();
+                    var messages = connection.Query<MessageDataModel>(query, new { Offset = offset, PageSize = pageSize }).ToList();
 
-                        // 計算總留言
-                        int totalMessages = messages?.FirstOrDefault()?.TotalMessages ?? 0;
+                    // 計算總留言
+                    int totalMessages = messages?.FirstOrDefault()?.TotalMessages ?? 0;
 
                         return new PagedMessagesResult
                         {
@@ -48,7 +48,7 @@ namespace myhw.Repository
                             Messages = messages
                         };
 
-                    }
+                     
 
                 }
             }
@@ -73,37 +73,55 @@ namespace myhw.Repository
             public int TotalMessages { get; set; }
             public string ErrorMessage { get; set; }
             public string ExceptionStackTrace { get; set; }
-            // 與 PagedListPager 期望的屬性一致
-            public int PageNumber => CurrentPage;
-            public int PageCount => TotalPages;
-            public int TotalItemCount => TotalMessages;
+
         }
 
         // 根據用戶名稱獲取留言
-        public List<MessageDataModel> GetMessagesByName(string name)
+        public PagedMessagesResult GetMessagesByName(string name, int? page, int pageSize)
         {
             try
             {
-                using (var connection = new SqlConnection())
+                using (var connection = new SqlConnection(connectionString))
                 {
                     connection.Open();
 
                     // 明確指定列的順序，確保與 MessageDataModel 類型的屬性順序一致
-                    string query = "SELECT ContentId, Content.UserId, Username, Email, Content, CreatedAt as Time FROM Content " +
-                                   "JOIN Users ON Content.UserId = Users.UserId " +
-                                   "WHERE UserName = @Name";//這裡要加ContentId
-
-                    var messages = connection.Query<MessageDataModel>(query, new { Name = name }).ToList();
-                    return messages;
+                    string query = @"
+                        SELECT ContentId, Content.UserId, Username, Email, Content, CreatedAt as Time,
+                                COUNT(*) OVER () as TotalMessages
+                        FROM Content
+                        JOIN Users ON Content.UserId = Users.UserId
+                        WHERE UserName = @Name
+                        ORDER BY ContentId 
+                        OFFSET @Offset ROWS
+                        FETCH NEXT @PageSize ROWS ONLY;";
+                    int offset = ((page ?? 1) <= 0 ? 1 : (page ?? 1) - 1) * pageSize;
+                    var messages = connection.Query<MessageDataModel>(query, new { Name = name, Offset = offset, PageSize = pageSize }).ToList();
+                     
+                    int totalMessages = messages?.FirstOrDefault()?.TotalMessages ?? 0;
+                    
+                    return new PagedMessagesResult
+                    {
+                        CurrentPage = page ?? 1,
+                        PageSize = pageSize,
+                        TotalMessages = totalMessages,
+                        Messages = messages,
+                        
+                    };
                 }
             }
             catch (Exception ex)
             {
-                // 記錄異常信息
-                HandleException(ex, "GetMessagesByName");
-                return null;
+                Console.WriteLine($"Error in GetMessagesByName: {ex.Message}");
+                ErrorLog.LogError($"Error in GetMessagesByName: {ex.Message}");
+                return new PagedMessagesResult
+                {
+                    ErrorMessage = ex.Message,
+                    ExceptionStackTrace = ex.StackTrace
+                };
             }
         }
+
 
         // 新增留言
         public void AddMessage(CreateModel message)
@@ -113,7 +131,7 @@ namespace myhw.Repository
                 string insertQuery = @"
                     INSERT INTO Content(UserId, Content) VALUES (@UserId,@Content)";
 
-                using (var connection = new SqlConnection())
+                using (var connection = new SqlConnection(connectionString))
                 {
                     connection.Open();
 
@@ -139,13 +157,13 @@ namespace myhw.Repository
                 HandleException(ex, "AddMessage");
             }
         }
-
+        
         // 根據用戶ID獲取留言
-        public MessageDataModel GetMessageByName(int userId)
+        public MessageDataModel GetMessageByContent(int userId)
         {
             try
             {
-                using (var connection = new SqlConnection())
+                using (var connection = new SqlConnection(connectionString))
                 {
                     connection.Open();
 
@@ -161,13 +179,13 @@ namespace myhw.Repository
                 return null;
             }
         }
-
+       
         // 根據留言ID獲取留言
         public MessageDataModel GetMessageByContentId(int ContentId)
         {
             try
             {
-                using (var connection = new SqlConnection())
+                using (var connection = new SqlConnection(connectionString))
                 {
                     connection.Open();
 
@@ -215,7 +233,7 @@ namespace myhw.Repository
         {
             try
             {
-                using (var connection = new SqlConnection())
+                using (var connection = new SqlConnection(connectionString))
                 {
                     connection.Open();
 

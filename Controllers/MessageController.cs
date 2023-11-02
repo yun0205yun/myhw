@@ -2,28 +2,39 @@
 using myhw.Helpers;
 using myhw.Models;
 using myhw.Service;
+using NPOI.SS.Formula.Functions;
 using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Web.Mvc;
 using static myhw.Repository.MessageRepository;
 
 public class MessageController : Controller
 {
     private readonly MessageService _messageService;
- 
- 
+
+    
+
+    public MessageController(MessageService messageService)
+    {
+        _messageService = messageService;
+    }
     public MessageController()
     {
         _messageService = new MessageService();
     }
 
+    // 登出
     public ActionResult Logout()
     {
         Session.Clear();
         return RedirectToAction("Log", "Account");
     }
 
+    // 前台顯示留言
     public ActionResult Front(string name, int? page)
-    {
+    { 
         const int PageSize = 5;
 
         if (Session["Username"] == null)
@@ -35,35 +46,52 @@ public class MessageController : Controller
 
         PagedMessagesResult paginatedMessages;
         IPagedList<MessageDataModel> pages;
-        if (string.IsNullOrEmpty(name))
-        {
-            // 調用 GetPagedMessages 方法
-            paginatedMessages = _messageService.GetPagedMessages(page,PageSize);
-            pages = paginatedMessages.Messages.ToPagedList(page.GetValueOrDefault(), PageSize, paginatedMessages.TotalMessages);
-             
-        }
-        else
-        {
-            // 調用 GetMessagesByName 方法
-            var messages = _messageService.GetMessagesByName(name);
-            pages =messages.ToPagedList(page.GetValueOrDefault(), PageSize, messages.Count);
-             
-        }
 
-        return View(pages);
+        try
+        {
+            int correctedPage = page ?? 1;
+            ViewBag.name = name;//加這個讓front可以呈現name=15
+            if (string.IsNullOrEmpty(name))
+            {
+                paginatedMessages = _messageService.GetPagedMessages(correctedPage, PageSize);
+            }
+            else
+            {
+                paginatedMessages = _messageService.GetMessagesByName(name, correctedPage, PageSize);
+            }
+
+
+            if (paginatedMessages.Messages != null)
+            {
+                pages = paginatedMessages.Messages.ToPagedList(correctedPage, PageSize, paginatedMessages.TotalMessages);
+            }
+            else
+            {
+                pages = new PagedList<MessageDataModel>(new List<MessageDataModel>(), correctedPage, PageSize);
+            }
+
+            return PartialView("_ProductGrid", pages);//return view(pages);
+        }
+        catch (Exception ex)
+        {
+            // 處理異常情況（記錄或顯示錯誤消息）
+            Console.WriteLine($"Front 操作出錯: {ex.Message}");
+            ModelState.AddModelError("", "無法顯示留言。");
+            return View(new PagedList<MessageDataModel>(new List<MessageDataModel>(), 1, PageSize));
+        }
     }
 
-
+    // 創建留言頁面
     public ActionResult Create()
     {
         return View();
     }
 
+    // 創建留言
     [HttpPost]
     [ValidateAntiForgeryToken]
     public ActionResult Create(CreateModel createModel)
     {
-
         if (Session["Username"] == null)
         {
             return RedirectToAction("Log", "Account");
@@ -97,17 +125,16 @@ public class MessageController : Controller
         }
     }
 
-
+    // 更新留言
     [HttpPost]
     public ActionResult UpdateMessage(int ContentId, string content)
     {
-
         try
         {
             // 檢查是否有使用者登錄
             if (Session["UserId"] != null)
             {
-                var message = _messageService.GetMessageByName(ContentId);
+                var message = _messageService.GetMessageByContent(ContentId);
 
                 if (message == null || Session["UserId"].ToString() != message.UserId.ToString())
                 {
@@ -118,7 +145,7 @@ public class MessageController : Controller
                     message.Content = content;
                     _messageService.UpdateMessage(message);
 
-                    // 返回统一的响应
+                    // 返回統一的響應
                     return Json(new ApiResponse<string> { Success = true, Message = "更新成功", Data = content });
                 }
             }
@@ -135,6 +162,7 @@ public class MessageController : Controller
         }
     }
 
+    // 刪除留言
     [HttpPost]
     public ActionResult DeleteMessage(int ContentId)
     {
@@ -145,22 +173,17 @@ public class MessageController : Controller
                 // 根據contentId得到消息
                 var message = _messageService.GetMessageByContentId(ContentId);
 
-
-
                 // 檢查用戶是否有權刪除消息
                 if (message != null && Session["UserId"].ToString() == message.UserId.ToString())
                 {
-                    // 刪除消失
+                    // 刪除消息
                     _messageService.DeleteMessage(ContentId);
                     return Json(new ApiResponse<int> { Success = true, Message = "刪除留言成功", Data = ContentId });
-
-
                 }
                 else
                 {
                     return Json(new ApiResponse<string> { Success = false, Message = "没有權限刪除留言" });
                 }
-
             }
             else
             {
@@ -174,8 +197,4 @@ public class MessageController : Controller
             return Json(new ApiResponse<string> { Success = false, Message = "刪除留言失敗" });
         }
     }
-
-
-
-
 }

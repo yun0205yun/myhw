@@ -9,12 +9,11 @@ namespace myhw.Repository
     public class AccountRepository
     {
         private readonly string _connectionString = @"Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=LOG;Integrated Security=True;";
-
-        //private readonly ErrorLogService _errorLogService;
+ 
 
         public AccountRepository()
         {
-            //_errorLogService = new ErrorLogService();
+             
         }
         // 檢查登入是否成功
         public MemoryDataModel IsLoginSuccessful(LogViewModel model)
