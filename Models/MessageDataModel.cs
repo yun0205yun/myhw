@@ -27,11 +27,13 @@ namespace myhw.Models
         [Required(ErrorMessage = "Content 是必需的")]
         public string Content { get; set; }
 
-        [Required(ErrorMessage = "Timestamp 是必需的")]
-        public DateTime Timestamp { get; set; }
+        [Required(ErrorMessage = "Time 是必需的")]
+        public DateTime Time{ get; set; }
 
+        
         public int TotalMessages { get; internal set; }
         public IPagedList<MessageDataModel> Messages { get; set; }
+        
      
 
     }

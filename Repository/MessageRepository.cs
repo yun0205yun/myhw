@@ -24,7 +24,7 @@ namespace myhw.Repository
                     connection.Open();
 
                     string query = @"
-                          SELECT ContentId, Content.UserId, Username, Email, Content, CreatedAt as Time,
+                          SELECT ContentId, Content.UserId, Username, Email, Content, Content.CreatedAt as Time,
                                  COUNT(*) OVER () as TotalMessages
                           FROM Content
                           JOIN Users ON Content.UserId = Users.UserId
@@ -87,7 +87,7 @@ namespace myhw.Repository
 
                     // 明確指定列的順序，確保與 MessageDataModel 類型的屬性順序一致
                     string query = @"
-                        SELECT ContentId, Content.UserId, Username, Email, Content, CreatedAt as Time,
+                        SELECT ContentId, Content.UserId, Username, Email, Content, Content.CreatedAt as Time,
                                 COUNT(*) OVER () as TotalMessages
                         FROM Content
                         JOIN Users ON Content.UserId = Users.UserId

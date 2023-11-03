@@ -1,0 +1,36 @@
+﻿@model IPagedList<myhw.Models.MessageDataModel>
+
+<table class="table">
+    <tr>
+        <th>姓名(帳號)</th>
+        <th>留言</th>
+        <th>時間</th>
+        <th>操作</th>
+    </tr>
+    @foreach (var message in Model)
+    {
+        <tr>
+            <td>@message.Username</td>
+            <td>
+                <span class="message-content" data-original="@message.Content">@message.Content</span>
+                <input type="text" class="edit-content" value="@message.Content" style="display: none;" />
+            </td>
+          
+            <td id="computerTime">@message.Time</td>
+
+
+            <td>
+                @if (Session["Username"] != null && Session["Username"].ToString() == message.Username)
+                {
+                    <button class="edit-btn" data-content-id="@message.UserId">編輯</button>
+                    <button class="save-btn" style="display: none;">完成</button>
+                    <button class="delete-btn" data-content-id="@message.ContentId">刪除</button>
+                }
+                else
+                {
+                    <text>你沒有權限</text>
+                }
+            </td>
+        </tr>
+    }
+</table>

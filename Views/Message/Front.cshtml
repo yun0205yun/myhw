@@ -5,10 +5,8 @@
 }
 
 <h2>Message Board</h2>
-<div id="gridcontainer">
-    @Html.Partial("_ProductGrid", Model)<!--有錯-->
-</div>
-<!-- Partial _ProductGrid.cshtml view -->
+
+
 @using (Html.BeginForm("Front", "Message", FormMethod.Get))
 {
     <p>
@@ -26,50 +24,23 @@ else
 {
     @Html.ActionLink("Login", "Log", "Account")
 }
-
+<div id="messageContainer">
+    @Html.Partial("_ProductGrid", Model)
+</div>
 @if (Model != null && Model.Any())
 {
-    <table class="table">
-        <tr>
-            <th>姓名(帳號)</th>
-            <th>留言</th>
-            <th>時間</th>
-            <th>操作</th>
-        </tr>
-        @foreach (var message in Model)
-        {
-            <tr>
-                <td>@message.Username</td>
-                <td>
-                    <span class="message-content" data-original="@message.Content">@message.Content</span>
-                    <input type="text" class="edit-content" value="@message.Content" style="display: none;" />
-                </td>
-                <td id="computerTime">@message.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")</td>
-                <td>
-                    @if (Session["Username"] != null && Session["Username"].ToString() == message.Username)
-                    {
-                        <button class="edit-btn" data-content-id="@message.UserId">編輯</button>
-                        <button class="save-btn" style="display: none;">完成</button>
-                        <button class="delete-btn" data-content-id="@message.ContentId">刪除</button>
-                    }
-                    else
-                    {
-                        <text>你沒有權限</text>
-                    }
-                </td>
-            </tr>
-        }
-    </table>
-    <div id="PagedListContainer">
+    <div id="pager" >
         @if (ViewBag.name != null)
         {
-            @Html.Pager(Model.PageSize, Model.PageIndex, Model.TotalItemCount, new AjaxOptions { UpdateTargetId = "gridcontainer" }).Options(O => O.AddRouteValue("name", ViewBag.name))
+            @Html.Pager(Model.PageSize, Model.PageIndex, Model.TotalItemCount, new AjaxOptions { UpdateTargetId = "messageContainer" }).Options(O => O.AddRouteValue("name", ViewBag.name))
         }
         else
         {
-            @Html.Pager(Model.PageSize, Model.PageIndex, Model.TotalItemCount, new AjaxOptions { UpdateTargetId = "gridcontainer" }).Options(o => o.Action("Front"))
+            @Html.Pager(Model.PageSize, Model.PageIndex, Model.TotalItemCount, new AjaxOptions { UpdateTargetId = "messageContainer" }).Options(o => o.Action("Front"))
         }
+
     </div>
+
 
 
 }
@@ -86,15 +57,12 @@ else
 @section scripts {
     <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-ajax-unobtrusive/3.2.6/jquery.unobtrusive-ajax.min.js"></script>
+
     <script>
         $(document).ready(function () {
-            // 獲取當前時間
-            var currentTime = new Date();
-            var formattedTime = currentTime.toLocaleString();
-            $("#computerTime").text(formattedTime);
 
             // 編輯按紐事件
-            $(".edit-btn").click(function () {
+            $(document).on("click", ".edit-btn", function () {
                 var row = $(this).closest("tr");
                 row.find(".message-content").hide();
                 row.find(".edit-content").val(row.find(".message-content").text());
@@ -103,7 +71,7 @@ else
                 row.find(".save-btn").show();
             });
 
-            $(".save-btn").click(function () {
+            $(document).on("click",".save-btn",function () {
                 var row = $(this).closest("tr");
                 var contentId = row.find(".edit-btn").data("content-id");
                 var editedContent = row.find(".edit-content").val();
@@ -130,7 +98,7 @@ else
                 });
             });
 
-            $(".delete-btn").click(function () {
+            $(document).on("click",".delete-btn",function () {
                 var row = $(this).closest("tr");
                 var contentId = $(this).data("content-id");
 
