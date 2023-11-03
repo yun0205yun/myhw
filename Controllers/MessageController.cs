@@ -2,11 +2,8 @@
 using myhw.Helpers;
 using myhw.Models;
 using myhw.Service;
-using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Web.Mvc;
 using static myhw.Repository.MessageRepository;
 
@@ -45,11 +42,12 @@ public class MessageController : Controller
         var username = Session["Username"].ToString();
 
         PagedMessagesResult paginatedMessages;
-        IPagedList<MessageDataModel> pages;
+        IPagedList<MessageDataModel> pages;//IPagedList<T>代表一個分頁的集合，它包含了分頁的相關信息
 
         try
         {
-            int correctedPage = page ?? 1;
+            int correctedPage = page??1;
+            correctedPage = Math.Max(1, correctedPage); // 如果是 null 或小於 1，設置為 1
             ViewBag.name = name;//加這個讓front可以呈現name=15
             if (string.IsNullOrEmpty(name))
             {
@@ -62,15 +60,21 @@ public class MessageController : Controller
 
 
             if (paginatedMessages.Messages != null)
-            {
+            {   //分頁
                 pages = paginatedMessages.Messages.ToPagedList(correctedPage, PageSize, paginatedMessages.TotalMessages);
+                if (Request.IsAjaxRequest())
+                {
+                    return PartialView("_ProductGrid", pages);
+                }
+                else
+                {
+                    return View(pages);
+                }
             }
             else
             {
-                pages = new PagedList<MessageDataModel>(new List<MessageDataModel>(), correctedPage, PageSize);
+                return PartialView("_ProductGrid", new PagedList<MessageDataModel>(new List<MessageDataModel>(), correctedPage, PageSize));
             }
-
-            return PartialView("_ProductGrid", pages);//return view(pages);
         }
         catch (Exception ex)
         {
@@ -105,7 +109,7 @@ public class MessageController : Controller
             {
                 UserId = UserId,
                 Content = createModel.Content,
-                Timestamp = DateTime.Now
+                CreatedAt = DateTime.Now
             };
 
             // 調用 _messageService.AddMessage 方法將留言添加到數據庫
