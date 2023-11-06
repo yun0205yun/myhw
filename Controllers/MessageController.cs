@@ -10,8 +10,9 @@ using static myhw.Repository.MessageRepository;
 public class MessageController : Controller
 {
     private readonly MessageService _messageService;
+    private const int PageSize = 5;
 
-    
+
 
     public MessageController(MessageService messageService)
     {
@@ -31,9 +32,7 @@ public class MessageController : Controller
 
     // 前台顯示留言
     public ActionResult Front(string name, int? page)
-    { 
-        const int PageSize = 5;
-
+    {
         if (Session["Username"] == null)
         {
             return RedirectToAction("Log", "Account");
@@ -41,47 +40,65 @@ public class MessageController : Controller
 
         var username = Session["Username"].ToString();
 
-        PagedMessagesResult paginatedMessages;
-        IPagedList<MessageDataModel> pages;//IPagedList<T>代表一個分頁的集合，它包含了分頁的相關信息
-
         try
         {
-            int correctedPage = page??1;
-            correctedPage = Math.Max(1, correctedPage); // 如果是 null 或小於 1，設置為 1
-            ViewBag.name = name;//加這個讓front可以呈現name=15
-            if (string.IsNullOrEmpty(name))
+            int correctedPage = page.HasValue ? page.Value : 1;
+
+
+            
+            Console.WriteLine($"Front or AjaxPage Corrected Page: {correctedPage}");
+            ViewBag.name = name;
+            var paginatedMessages = GetPagedMessagesResult(name, correctedPage, PageSize);
+
+            var pages = paginatedMessages.Messages.ToPagedList(correctedPage, PageSize, paginatedMessages.TotalMessages);
+
+            return View(pages);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Front 操作出錯: {ex.Message}");
+            ModelState.AddModelError("", "無法顯示留言。");
+            return View(new PagedList<MessageDataModel>(new List<MessageDataModel>(), 1, PageSize));
+        }
+    }
+
+    public ActionResult AjaxPage(string name, int? page)
+     {
+        int correctedPage = page.HasValue ? page.Value:1;
+        
+        Console.WriteLine($"Front or AjaxPage Corrected Page: {correctedPage}");
+        ViewBag.name = name;
+        try
+        {
+            var paginatedMessages = GetPagedMessagesResult(name, correctedPage, PageSize);
+            var pages = paginatedMessages.Messages.ToPagedList(correctedPage, PageSize, paginatedMessages.TotalMessages);
+
+            if (Request.IsAjaxRequest())
             {
-                paginatedMessages = _messageService.GetPagedMessages(correctedPage, PageSize);
+                return PartialView("_ProductGrid", pages);
             }
             else
             {
-                paginatedMessages = _messageService.GetMessagesByName(name, correctedPage, PageSize);
-            }
-
-
-            if (paginatedMessages.Messages != null)
-            {   //分頁
-                pages = paginatedMessages.Messages.ToPagedList(correctedPage, PageSize, paginatedMessages.TotalMessages);
-                if (Request.IsAjaxRequest())
-                {
-                    return PartialView("_ProductGrid", pages);
-                }
-                else
-                {
-                    return View(pages);
-                }
-            }
-            else
-            {
-                return PartialView("_ProductGrid", new PagedList<MessageDataModel>(new List<MessageDataModel>(), correctedPage, PageSize));
+                return View(pages);
             }
         }
         catch (Exception ex)
         {
-            // 處理異常情況（記錄或顯示錯誤消息）
-            Console.WriteLine($"Front 操作出錯: {ex.Message}");
+            Console.WriteLine($"_ProductGrid 操作出錯: {ex.Message}");
             ModelState.AddModelError("", "無法顯示留言。");
-            return View(new PagedList<MessageDataModel>(new List<MessageDataModel>(), 1, PageSize));
+            return PartialView("_ProductGrid", new PagedList<MessageDataModel>(new List<MessageDataModel>(), correctedPage, PageSize));
+        }
+    }
+
+    private PagedMessagesResult GetPagedMessagesResult(string name, int correctedPage, int pageSize)
+    {
+        if (string.IsNullOrEmpty(name))
+        {
+            return _messageService.GetPagedMessages(correctedPage, pageSize);
+        }
+        else
+        {
+            return _messageService.GetMessagesByName(name, correctedPage, pageSize);
         }
     }
 

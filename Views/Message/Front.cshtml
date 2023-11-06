@@ -7,7 +7,7 @@
 <h2>Message Board</h2>
 
 
-@using (Html.BeginForm("Front", "Message", FormMethod.Get))
+@using (Ajax.BeginForm("AjaxPage", "Message", new AjaxOptions { HttpMethod = "GET", UpdateTargetId = "messageContainer" }))//改這個
 {
     <p>
         姓名: @Html.TextBox("name")
@@ -27,27 +27,7 @@ else
 <div id="messageContainer">
     @Html.Partial("_ProductGrid", Model)
 </div>
-@if (Model != null && Model.Any())
-{
-    <div id="pager" >
-        @if (ViewBag.name != null)
-        {
-            @Html.Pager(Model.PageSize, Model.PageIndex, Model.TotalItemCount, new AjaxOptions { UpdateTargetId = "messageContainer" }).Options(O => O.AddRouteValue("name", ViewBag.name))
-        }
-        else
-        {
-            @Html.Pager(Model.PageSize, Model.PageIndex, Model.TotalItemCount, new AjaxOptions { UpdateTargetId = "messageContainer" }).Options(o => o.Action("Front"))
-        }
 
-    </div>
-
-
-
-}
-else
-{
-    <p>没有可用的消息。</p>
-}
 
 
 
@@ -60,6 +40,9 @@ else
 
     <script>
         $(document).ready(function () {
+            var page = 1;
+            //loadPage(page);
+
 
             // 編輯按紐事件
             $(document).on("click", ".edit-btn", function () {
@@ -125,6 +108,30 @@ else
             $(".create-btn").click(function () {
                 window.location.href = '@Url.Action("Create", "Message")';
             });
+            // 分頁按鈕點擊事件
+            $(document).on("click", ".pager", function (e) {
+                e.preventDefault();
+                var clickedPage = $(this).text();
+                console.log("Clicked Page: " + clickedPage);
+                loadPage(parseInt(clickedPage));
+            });
         });
+        function loadPage(page) {
+            console.log("Loading Page: " + page);
+            var searchValue = $('#name').val();
+            
+                $.ajax({
+                    url: '/Message/AjaxPage',
+                    type: 'GET',
+                    data: { name: searchValue, page: page },
+                    success: function (result) {
+                        $('#messageContainer').html(result);
+                    },
+                    error: function (error) {
+                        alert("加載頁面失敗");
+                    }
+                });
+
+        }
     </script>
 }

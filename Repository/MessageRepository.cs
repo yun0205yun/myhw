@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Web.UI.WebControls;
+using MvcPaging;
 
 namespace myhw.Repository
 {
@@ -32,8 +33,10 @@ namespace myhw.Repository
                           OFFSET @Offset ROWS
                           FETCH NEXT @PageSize ROWS ONLY;";
 
+                   int offset = ((page ?? 1) < 1 ? 0 : (page ?? 1) - 1) * pageSize;
 
-                    int offset = ((page ?? 1) <= 0 ? 1 : (page ?? 1) - 1) * pageSize;//確保計算出的 offset 值不會小於 0
+                    
+
 
                     var messages = connection.Query<MessageDataModel>(query, new { Offset = offset, PageSize = pageSize }).ToList();
 
@@ -95,7 +98,9 @@ namespace myhw.Repository
                         ORDER BY ContentId 
                         OFFSET @Offset ROWS
                         FETCH NEXT @PageSize ROWS ONLY;";
-                    int offset = ((page ?? 1) <= 0 ? 1 : (page ?? 1) - 1) * pageSize;
+                    int offset = ((page ?? 1) < 1 ? 0 : (page ?? 1) - 1) * pageSize;//0
+                    
+
                     var messages = connection.Query<MessageDataModel>(query, new { Name = name, Offset = offset, PageSize = pageSize }).ToList();
                      
                     int totalMessages = messages?.FirstOrDefault()?.TotalMessages ?? 0;
