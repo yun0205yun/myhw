@@ -15,7 +15,7 @@
                 <span class="message-content" data-original="@message.Content">@message.Content</span>
                 <input type="text" class="edit-content" value="@message.Content" style="display: none;" />
             </td>
-          
+
             <td id="computerTime">@message.Time</td>
 
 
@@ -34,3 +34,26 @@
         </tr>
     }
 </table>
+<div>
+        @if (Model != null && Model.Any())
+        {
+            <div id="pager">
+                @if (ViewBag.name != null)
+                {
+                    @Html.Pager(Model.PageSize, Model.PageIndex, Model.TotalItemCount, new AjaxOptions { UpdateTargetId = "messageContainer" }).Options(O => O.AddRouteValue("name", ViewBag.name))
+                }
+                else
+                {
+                    @Html.Pager(Model.PageSize, Model.PageIndex, Model.TotalItemCount, new AjaxOptions { UpdateTargetId = "messageContainer" }).Options(o => o.Action("AjaxPage"))
+                }
+
+            </div>
+
+
+
+        }
+        else
+        {
+            <p>没有可用的消息。</p>
+        }
+</div>
