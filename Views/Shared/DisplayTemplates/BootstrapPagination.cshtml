@@ -1,0 +1,71 @@
+﻿@model PaginationModel
+
+<div class="pagination">
+    <ul>
+        @foreach (var link in Model.PaginationLinks)
+        {
+            //<p>Link: @link.DisplayText, Url: @link.Url, Active: @link.Active, IsCurrent: @link.IsCurrent</p>
+            @BuildLink(link)
+        }
+    </ul>
+</div>
+
+@helper BuildLink(PaginationLink link)
+{
+var liBuilder = new TagBuilder("li");
+
+// 檢查是否當前激活，如果是，添加 "active" 類別
+if (link.IsCurrent)
+{
+    liBuilder.MergeAttribute("class", "active");
+}
+// 檢查是否禁用，如果是，添加 "disabled" 類別
+if (!link.Active)
+{
+    liBuilder.MergeAttribute("class", "disabled");
+}
+
+
+
+var aBuilder = new TagBuilder("a");
+// 設置鏈接的 href 屬性
+if (link.Url == null)
+{
+    // 如果 Url 為 null，表示上一頁或下一頁
+    if (link.DisplayText == "«")
+    {
+        // 上一頁的邏輯處理，你需要根據具體情況生成上一頁的地址
+        aBuilder.MergeAttribute("href", "/Message/AjaxPage?page=" + (link.PageIndex - 1));
+    }
+    else if (link.DisplayText == "»")
+    {
+        // 下一頁的邏輯處理，你需要根據具體情況生成下一頁的地址
+        aBuilder.MergeAttribute("href", "/Message/AjaxPage?page=" + (link.PageIndex + 1));
+    }
+
+}
+else
+{
+    aBuilder.MergeAttribute("href", link.Url);
+}
+
+
+// 添加 Ajax 支持的屬性
+if (Model.AjaxOptions != null)
+{
+    foreach (var ajaxOption in Model.AjaxOptions.ToUnobtrusiveHtmlAttributes())
+    {
+        aBuilder.MergeAttribute(ajaxOption.Key, ajaxOption.Value.ToString(), true);
+    }
+}
+
+
+
+
+aBuilder.SetInnerText(link.DisplayText);
+
+// 將鏈接添加到 li 元素中
+liBuilder.InnerHtml = aBuilder.ToString();
+// 使用 Html.Raw 將構建的 HTML 字符串傳遞到視圖
+    @Html.Raw(liBuilder.ToString())
+}
