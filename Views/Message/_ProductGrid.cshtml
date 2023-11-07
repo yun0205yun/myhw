@@ -1,5 +1,35 @@
 ﻿@model IPagedList<myhw.Models.MessageDataModel>
 
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <style>
+        /* 分頁樣式 */
+
+        .pagination {
+            justify-content: center;
+            list-style: none; /* 移除黑點 */
+        }
+
+            .pagination li {
+                display: inline;
+            }
+
+                .pagination li a {
+                    color: #007bff; /* 鏈接顏色 */
+                    padding: 8px 16px; /* 添加內邊距以提高可點擊區域 */
+                    text-decoration: none; /*去除文字的默認下劃線*/
+                    transition: background-color .3s; /*0.3秒完成過渡效果*/
+                    border: 1px solid #ddd; /*元素的邊框*/
+                }
+
+                .pagination li.active a {
+                    background-color: #007bff; /* 選中項目背景顏色 */
+                    color: white; /* 選中項目文字顏色 */
+                }
+    </style>
+</head>
 <table class="table">
     <tr>
         <th>姓名(帳號)</th>
@@ -35,25 +65,38 @@
     }
 </table>
 <div>
-        @if (Model != null && Model.Any())
-        {
-            <div id="pager">
+   
+    @if (Model != null && Model.Any())
+    {
+
+        <nav aria-label="Page navigation example">
+            <ul class="pagination">
                 @if (ViewBag.name != null)
                 {
-                    @Html.Pager(Model.PageSize, Model.PageIndex, Model.TotalItemCount, new AjaxOptions { UpdateTargetId = "messageContainer" }).Options(O => O.AddRouteValue("name", ViewBag.name))
+                    @Html.Pager(Model.PageSize, Model.PageIndex, Model.TotalItemCount, new AjaxOptions { UpdateTargetId = "messageContainer" }).Options(O => O.AddRouteValue("name", ViewBag.name)).Options(o => o
+                                    .DisplayTemplate("~/Views/Shared/DisplayTemplates/BootstrapPagination.cshtml")
+                                    .MaxNrOfPages(5)
+                                    .AlwaysAddFirstPageNumber()
+                                    //.SetPreviousPageText("上一頁")
+                                    //.SetNextPageText("下一頁")
+                                    )
+
                 }
                 else
                 {
-                    @Html.Pager(Model.PageSize, Model.PageIndex, Model.TotalItemCount, new AjaxOptions { UpdateTargetId = "messageContainer" }).Options(o => o.Action("AjaxPage"))
+                    @Html.Pager(Model.PageSize, Model.PageIndex, Model.TotalItemCount, new AjaxOptions { UpdateTargetId = "messageContainer" }).Options(o => o.Action("AjaxPage")).Options(o => o
+                                    .DisplayTemplate("~/Views/Shared/DisplayTemplates/BootstrapPagination.cshtml")
+                                    .MaxNrOfPages(5)
+                                    .AlwaysAddFirstPageNumber()
+                                    //.SetPreviousPageText("上一頁")
+                                    //.SetNextPageText("下一頁")
+                                    )
                 }
-
-            </div>
-
-
-
-        }
-        else
-        {
-            <p>没有可用的消息。</p>
-        }
+            </ul>
+        </nav>
+    }
+    else
+    {
+        <p>没有可用的消息。</p>
+    }
 </div>

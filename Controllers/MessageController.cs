@@ -42,14 +42,13 @@ public class MessageController : Controller
 
         try
         {
+            // 確保頁碼不為空，並設置默認值為1
             int correctedPage = page.HasValue ? page.Value : 1;
-
-
-            
-            Console.WriteLine($"Front or AjaxPage Corrected Page: {correctedPage}");
+            // 將用戶名傳遞給 ViewBag，用於視圖顯示
             ViewBag.name = name;
+            // 獲取分頁留言結果
             var paginatedMessages = GetPagedMessagesResult(name, correctedPage, PageSize);
-
+            // 使用PagedList封裝留言結果，便於在視圖中進行分頁顯示
             var pages = paginatedMessages.Messages.ToPagedList(correctedPage, PageSize, paginatedMessages.TotalMessages);
 
             return View(pages);
@@ -58,26 +57,27 @@ public class MessageController : Controller
         {
             Console.WriteLine($"Front 操作出錯: {ex.Message}");
             ModelState.AddModelError("", "無法顯示留言。");
+            // 返回一個空的分頁結果，以避免出現異常
             return View(new PagedList<MessageDataModel>(new List<MessageDataModel>(), 1, PageSize));
         }
     }
 
+
     public ActionResult AjaxPage(string name, int? page)
      {
+        // 確保頁碼不為空，並設置默認值為1
         int correctedPage = page.HasValue ? page.Value:1;
-        
-        Console.WriteLine($"Front or AjaxPage Corrected Page: {correctedPage}");
         ViewBag.name = name;
         try
         {
             var paginatedMessages = GetPagedMessagesResult(name, correctedPage, PageSize);
             var pages = paginatedMessages.Messages.ToPagedList(correctedPage, PageSize, paginatedMessages.TotalMessages);
-
+            // 如果是Ajax請求，則返回部分視圖 "_ProductGrid"
             if (Request.IsAjaxRequest())
             {
                 return PartialView("_ProductGrid", pages);
             }
-            else
+            else// 如果是普通請求，則返回完整視圖
             {
                 return View(pages);
             }
