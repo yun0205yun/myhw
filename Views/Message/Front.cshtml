@@ -1,13 +1,13 @@
-﻿@model IPagedList<myhw.Models.MessageDataModel>
+﻿﻿@model IPagedList<myhw.Models.MessageDataModel>
 
 @{
     ViewBag.Title = "Message Board";
 }
 
-
 <h2>Message Board</h2>
 
-@using (Ajax.BeginForm("AjaxPage", "Message", new AjaxOptions { HttpMethod = "GET", UpdateTargetId = "messageContainer", OnBegin = "onAjaxBegin" })) // 這裡確保 UpdateTargetId 是 _ProductGrid 的容器
+
+@using (Ajax.BeginForm("AjaxPage", "Message", new AjaxOptions { HttpMethod = "GET", UpdateTargetId = "messageContainer" }))//改這個
 {
     <p>
         姓名: @Html.TextBox("name")
@@ -40,7 +40,7 @@ else
 
     <script>
         $(document).ready(function () {
-
+            var page = 1;
             //loadPage(page);
 
 
@@ -108,15 +108,14 @@ else
             $(".create-btn").click(function () {
                 window.location.href = '@Url.Action("Create", "Message")';
             });
-
             // 分頁按鈕點擊事件
             $(document).on("click", ".pager", function (e) {
                 e.preventDefault();
                 var clickedPage = $(this).text();
-                console.log("Clicked Page: " + clickedPage);
+                console.log(`Clicked Page: ${clickedPage}, Search Value: ${searchValue}`);
+                 
                 loadPage(parseInt(clickedPage));
             });
-             
         });
         function loadPage(page) {
             console.log("Loading Page: " + page);
@@ -125,7 +124,6 @@ else
                 $.ajax({
                     url: '/Message/AjaxPage',
                     type: 'GET',
-                    dataType: 'html',
                     data: { name: searchValue, page: page },
                     success: function (result) {
                         $('#messageContainer').html(result);
@@ -134,11 +132,7 @@ else
                         alert("加載頁面失敗");
                     }
                 });
-             
-        }
-        function onAjaxBegin() {
-            // 取消表單的默認行為
-            return false;
+
         }
     </script>
 }
