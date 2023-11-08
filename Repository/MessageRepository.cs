@@ -18,7 +18,7 @@ namespace myhw.Repository
         {
             try
             {
-                 
+
 
                 using (var connection = new SqlConnection(connectionString))
                 {
@@ -33,9 +33,9 @@ namespace myhw.Repository
                           OFFSET @Offset ROWS
                           FETCH NEXT @PageSize ROWS ONLY;";
 
-                   int offset = ((page ?? 1) < 1 ? 0 : (page ?? 1) - 1) * pageSize;
+                    int offset = ((page ?? 1) < 1 ? 0 : (page ?? 1) - 1) * pageSize;
 
-                    
+
 
 
                     var messages = connection.Query<MessageDataModel>(query, new { Offset = offset, PageSize = pageSize }).ToList();
@@ -43,15 +43,15 @@ namespace myhw.Repository
                     // 計算總留言
                     int totalMessages = messages?.FirstOrDefault()?.TotalMessages ?? 0;
 
-                        return new PagedMessagesResult
-                        {
-                            CurrentPage = page ?? 1,
-                            PageSize = pageSize,
-                            TotalMessages = totalMessages,
-                            Messages = messages
-                        };
+                    return new PagedMessagesResult
+                    {
+                        CurrentPage = page ?? 1,
+                        PageSize = pageSize,
+                        TotalMessages = totalMessages,
+                        Messages = messages
+                    };
 
-                     
+
 
                 }
             }
@@ -94,24 +94,24 @@ namespace myhw.Repository
                                 COUNT(*) OVER () as TotalMessages
                         FROM Content
                         JOIN Users ON Content.UserId = Users.UserId
-                        WHERE UserName = @Name
+                        WHERE Username = @Name
                         ORDER BY ContentId 
                         OFFSET @Offset ROWS
                         FETCH NEXT @PageSize ROWS ONLY;";
                     int offset = ((page ?? 1) < 1 ? 0 : (page ?? 1) - 1) * pageSize;//0
-                    
+
 
                     var messages = connection.Query<MessageDataModel>(query, new { Name = name, Offset = offset, PageSize = pageSize }).ToList();
-                     
+
                     int totalMessages = messages?.FirstOrDefault()?.TotalMessages ?? 0;
-                    
+
                     return new PagedMessagesResult
                     {
                         CurrentPage = page ?? 1,
                         PageSize = pageSize,
                         TotalMessages = totalMessages,
                         Messages = messages,
-                        
+
                     };
                 }
             }
@@ -162,7 +162,7 @@ namespace myhw.Repository
                 HandleException(ex, "AddMessage");
             }
         }
-        
+
         // 根據用戶ID獲取留言
         public MessageDataModel GetMessageByContent(int userId)
         {
@@ -184,7 +184,7 @@ namespace myhw.Repository
                 return null;
             }
         }
-       
+
         // 根據留言ID獲取留言
         public MessageDataModel GetMessageByContentId(int ContentId)
         {

@@ -17,7 +17,7 @@ namespace myhw.Service
         // 依賴注入，注入 MessageRepository  的實例
         public MessageService()
         {
-            _repository =  new MessageRepository();
+            _repository = new MessageRepository();
         }
 
         // 以連接字串為參數的建構函式，用於直接建立 MessageRepository 和 ErrorLogService 的實例
