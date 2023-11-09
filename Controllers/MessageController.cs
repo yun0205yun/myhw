@@ -4,6 +4,7 @@ using myhw.Models;
 using myhw.Service;
 using System;
 using System.Collections.Generic;
+using System.Web;
 using System.Web.Mvc;
 using static myhw.Repository.MessageRepository;
 
@@ -26,7 +27,14 @@ public class MessageController : Controller
     // 登出
     public ActionResult Logout()
     {
-        Session.Clear();
+        // 保存之前的用戶名
+        Session["RememberedUsername"] = Session["Username"];
+
+        // 清除 Session
+        //Session.Clear();
+         
+
+        // 重定向到登入頁面
         return RedirectToAction("Log", "Account");
     }
 
@@ -146,6 +154,7 @@ public class MessageController : Controller
     }
     
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public ActionResult UpdateMessage(int ContentId, string content)
     {
         try
@@ -163,10 +172,20 @@ public class MessageController : Controller
                 else
                 {
                     message.Content = content;
-                    _messageService.UpdateMessage(message);
+                    bool trueUpdate = _messageService.UpdateMessage(message);
+                    //_messageService.UpdateMessage(message);
+                    if (trueUpdate)
+                    {
+                        // 返回統一的響應
+                        return Json(new ApiResponse<string> { Success = true, Message = "更新成功", Data = content });
+                    }
+                    else
+                    {
+                      
+                        return Json(new ApiResponse<string> { Success = false, Message = "更新留言失敗" });
+                    }
 
-                    // 返回統一的響應
-                    return Json(new ApiResponse<string> { Success = true, Message = "更新成功", Data = content });
+
                 }
             }
             else
@@ -184,6 +203,7 @@ public class MessageController : Controller
 
     // 刪除留言
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public ActionResult DeleteMessage(int ContentId)
     {
         try
@@ -217,5 +237,6 @@ public class MessageController : Controller
             Console.WriteLine($"DeleteMessage 操作發生錯誤: {ex.Message}");
             return Json(new ApiResponse<string> { Success = false, Message = "刪除留言失敗" });
         }
+        
     }
 }

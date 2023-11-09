@@ -23,9 +23,12 @@
             <td>
                 @if (Session["Username"] != null && Session["Username"].ToString() == message.Username)
                 {
-                    <button class="edit-btn" data-content-id="@message.UserId">編輯</button>
-                    <button class="save-btn" style="display: none;">完成</button>
-                    <button class="delete-btn" data-content-id="@message.ContentId">刪除</button>
+                    
+                       @Html.AntiForgeryToken()
+                       <button class="edit-btn" data-content-id="@message.UserId">編輯</button>
+                       <button class="save-btn" style="display: none;">完成</button>
+                       <button class="delete-btn" data-content-id="@message.ContentId">刪除</button>
+                   
                 }
                 else
                 {

@@ -10,17 +10,16 @@ namespace myhw.Models
         [Required]
         [Display(Name = "帳號")]
         public string Username { get; set; }
-        [Required]
+        [Required(ErrorMessage = "請輸入密碼")]
         [DataType(DataType.Password)]
         [Display(Name = "密碼")]
         public string Password { get; set; }
+        [Required(ErrorMessage = "請確認密碼")]
         [DataType(DataType.Password)]
         [Display(Name = "確認密碼")]
-        [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
+        [Compare("Password", ErrorMessage = "密碼和確認密碼不一致")]
         public string ConfirmPassword { get; set; }
-        [Required]
-        [Display(Name = "Email")]
-        public string Email { get; set; }
+
     }
 }
 
