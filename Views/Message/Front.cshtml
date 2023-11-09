@@ -13,7 +13,11 @@
         姓名: @Html.TextBox("name")
         <input type="submit" value="搜尋" />
     </p>
+
 }
+
+
+
 
 @if (Session["Username"] != null)
 {
@@ -58,11 +62,11 @@ else
                 var row = $(this).closest("tr");
                 var contentId = row.find(".edit-btn").data("content-id");
                 var editedContent = row.find(".edit-content").val();
-
+                var token = $('input[name="__RequestVerificationToken"]').val(); // 获取防伪标记的值
                 $.ajax({
                     type: "POST",
                     url: "/Message/UpdateMessage",
-                    data: { contentId: contentId, content: editedContent },
+                    data: { contentId: contentId, content: editedContent , __RequestVerificationToken: token },
                     success: function (response) {
                         if (response.Success) {
                             alert("操作成功：" + response.Message);
@@ -80,15 +84,16 @@ else
                     }
                 });
             });
+            
 
-            $(document).on("click",".delete-btn",function () {
+            $(document).on("click", ".delete-btn", function () {
                 var row = $(this).closest("tr");
                 var contentId = $(this).data("content-id");
-
+                var token = $('input[name="__RequestVerificationToken"]').val(); // 获取防伪标记的值
                 $.ajax({
                     type: "POST",
                     url: "/Message/DeleteMessage",
-                    data: { contentId: contentId },
+                    data: { contentId: contentId, __RequestVerificationToken: token },
                     success: function (response) {
                         if (response.Success) {
                             row.remove();
@@ -113,7 +118,7 @@ else
                 e.preventDefault();
                 var clickedPage = $(this).text();
                 console.log(`Clicked Page: ${clickedPage}, Search Value: ${searchValue}`);
-                 
+
                 loadPage(parseInt(clickedPage));
             });
         });

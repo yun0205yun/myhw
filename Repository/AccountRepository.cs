@@ -67,7 +67,7 @@ namespace myhw.Repository
         }
 
         // 處理使用者註冊
-        public string RegisterViewModel(string username, string password, string email)
+        public string RegisterViewModel(string username, string password)
         {
             try
             {
@@ -86,7 +86,9 @@ namespace myhw.Repository
 
                     // 將使用者資料插入資料庫
                     var insertUserSql = "INSERT INTO Users (Username, Password, Email) VALUES (@Username, @Password, @Email)";
-                    connection.Execute(insertUserSql, new { Username = username, Password = password, Email = email });
+                    connection.Execute(insertUserSql, new { Username = username, Password = password, Email = "沒改資料庫(db is not null)" });
+
+
 
                     return "註冊成功";
                 }

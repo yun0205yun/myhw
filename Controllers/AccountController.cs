@@ -21,6 +21,7 @@ namespace myhw.Controllers
             if (rememberMeCookie != null)
             {
                 model.RememberMe = true;
+                model.Username = rememberMeCookie.Value;
             }
 
             // 檢查是否在 Session 中存在成功登入的標誌
@@ -54,7 +55,8 @@ namespace myhw.Controllers
                 {
                     SetRememberMeCookie(model.Username);
                 }
-
+                // 清除之前登入的用戶名
+                Session.Remove("RememberedUsername");
                 // 重定向到 "Front"
                 return RedirectToAction("Front", "Message");
             }
@@ -81,8 +83,13 @@ namespace myhw.Controllers
         {
             if (ModelState.IsValid)
             {
+                if (model.Password != model.ConfirmPassword)
+                {
+                    ModelState.AddModelError("ConfirmPassword", "密碼和確認密碼不一致");
+                    return View(model);
+                }
                 // 嘗試註冊使用者
-                string registrationStatus = _repository.RegisterViewModel(model.Username, model.Password, model.Email);
+                string registrationStatus = _repository.RegisterViewModel(model.Username, model.Password);
 
                 if (registrationStatus == "註冊成功")
                 {
@@ -109,6 +116,8 @@ namespace myhw.Controllers
             };
 
             Response.Cookies.Add(cookie);
+            // 將用戶名保存在 Session 中
+            Session["RememberedUsername"] = username;
         }
 
         public ActionResult Front()
@@ -125,6 +134,7 @@ namespace myhw.Controllers
                 return RedirectToAction("Log", "Account");
             }
         }
+        
 
 
 

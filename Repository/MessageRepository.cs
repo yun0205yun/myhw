@@ -13,6 +13,7 @@ namespace myhw.Repository
     public class MessageRepository
     {
         string connectionString = @"Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=LOG;Integrated Security=True;";
+       
         //分頁利用offset和fetch子句
         public PagedMessagesResult GetPagedMessages(int? page, int pageSize)
         {
@@ -215,11 +216,11 @@ namespace myhw.Repository
         }
 
         // 更新留言
-        public void UpdateMessage(MessageDataModel message)
+        /*public void UpdateMessage(MessageDataModel message)
         {
             try
             {
-                using (var connection = new SqlConnection())
+                using (var connection = new SqlConnection(connectionString))
                 {
                     connection.Open();
 
@@ -231,10 +232,28 @@ namespace myhw.Repository
             {
                 HandleException(ex, "UpdateMessage");
             }
-        }
+        }*/
+        public bool UpdateMessage(MessageDataModel message)
+        {
+            try
+            {
+                using (var connection = new SqlConnection(connectionString))
+                {
+                    connection.Open();
 
+                    string query = "UPDATE Content SET Content = @Content WHERE ContentId = @ContentId";
+                    int trueUpdate=connection.Execute(query, new { message.Content, message.ContentId });
+                    return trueUpdate > 0;
+                }
+            }
+            catch (Exception ex)
+            {
+                HandleException(ex, "UpdateMessage");
+                return false;
+            }
+        }
         // 刪除留言
-        public void DeleteMessage(int ContentId)
+        public bool DeleteMessage(int ContentId)
         {
             try
             {
@@ -243,12 +262,15 @@ namespace myhw.Repository
                     connection.Open();
 
                     string query = "DELETE FROM Content WHERE ContentId = @ContentId";
-                    connection.Execute(query, new { ContentId = ContentId });
+                    int trueDelete = connection.Execute(query, new { ContentId = ContentId });
+                    return trueDelete > 0;
                 }
+
             }
             catch (Exception ex)
             {
                 HandleException(ex, "DeleteMessage");
+                return false;
             }
         }
 

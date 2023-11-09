@@ -106,28 +106,42 @@ namespace myhw.Service
         }
 
         // 更新留言
-        public void UpdateMessage(MessageDataModel message)
+        /* public void UpdateMessage(MessageDataModel message)
+         {
+             try
+             {
+                 _repository.UpdateMessage(message);
+             }
+             catch (Exception ex)
+             {
+                 HandleException(ex, "UpdateMessage");
+             }
+         }*/
+        public bool UpdateMessage(MessageDataModel message)
         {
             try
             {
                 _repository.UpdateMessage(message);
+                return true;
             }
             catch (Exception ex)
             {
                 HandleException(ex, "UpdateMessage");
+                return false;
             }
         }
-
         // 刪除留言
-        public void DeleteMessage(int ContentId)
+        public bool DeleteMessage(int ContentId)
         {
             try
             {
                 _repository.DeleteMessage(ContentId);
+                return true;
             }
             catch (Exception ex)
             {
                 HandleException(ex, "DeleteMessage");
+                return false;
             }
         }
 
