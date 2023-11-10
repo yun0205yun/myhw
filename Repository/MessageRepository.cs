@@ -7,13 +7,14 @@ using System.Data.SqlClient;
 using System.Linq;
 using System.Web.UI.WebControls;
 using MvcPaging;
+using System.Configuration;
 
 namespace myhw.Repository
 {
     public class MessageRepository
     {
-        string connectionString = @"Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=LOG;Integrated Security=True;";
-       
+        string connectionString = ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString;
+
         //分頁利用offset和fetch子句
         public PagedMessagesResult GetPagedMessages(int? page, int pageSize)
         {
@@ -215,24 +216,6 @@ namespace myhw.Repository
             }
         }
 
-        // 更新留言
-        /*public void UpdateMessage(MessageDataModel message)
-        {
-            try
-            {
-                using (var connection = new SqlConnection(connectionString))
-                {
-                    connection.Open();
-
-                    string query = "UPDATE Content SET Content = @Content WHERE ContentId = @ContentId";
-                    connection.Execute(query, new { message.Content, message.ContentId });
-                }
-            }
-            catch (Exception ex)
-            {
-                HandleException(ex, "UpdateMessage");
-            }
-        }*/
         public bool UpdateMessage(MessageDataModel message)
         {
             try
@@ -243,7 +226,7 @@ namespace myhw.Repository
 
                     string query = "UPDATE Content SET Content = @Content WHERE ContentId = @ContentId";
                     int trueUpdate=connection.Execute(query, new { message.Content, message.ContentId });
-                    return trueUpdate > 0;
+                    return trueUpdate==1;
                 }
             }
             catch (Exception ex)
@@ -263,7 +246,7 @@ namespace myhw.Repository
 
                     string query = "DELETE FROM Content WHERE ContentId = @ContentId";
                     int trueDelete = connection.Execute(query, new { ContentId = ContentId });
-                    return trueDelete > 0;
+                    return trueDelete==1;
                 }
 
             }

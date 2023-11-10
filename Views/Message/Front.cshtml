@@ -10,7 +10,7 @@
 @using (Ajax.BeginForm("AjaxPage", "Message", new AjaxOptions { HttpMethod = "GET", UpdateTargetId = "messageContainer" }))//改這個
 {
     <p>
-        姓名: @Html.TextBox("name")
+        姓名: @Html.TextBox("name") 
         <input type="submit" value="搜尋" />
     </p>
 
@@ -22,7 +22,7 @@
 @if (Session["Username"] != null)
 {
     <p>歡迎, @Session["Username"]！</p>
-    @Html.ActionLink("登出", "Logout", "Message", new { @class = "btn btn-primary" })
+    @Html.ActionLink("登出", "Logout", "Account", null, new { @class = "btn btn-primary" })
 }
 else
 {
@@ -62,7 +62,7 @@ else
                 var row = $(this).closest("tr");
                 var contentId = row.find(".edit-btn").data("content-id");
                 var editedContent = row.find(".edit-content").val();
-                var token = $('input[name="__RequestVerificationToken"]').val(); // 获取防伪标记的值
+                var token = $('input[name="__RequestVerificationToken"]').val(); //獲取防偽標記
                 $.ajax({
                     type: "POST",
                     url: "/Message/UpdateMessage",
@@ -89,7 +89,7 @@ else
             $(document).on("click", ".delete-btn", function () {
                 var row = $(this).closest("tr");
                 var contentId = $(this).data("content-id");
-                var token = $('input[name="__RequestVerificationToken"]').val(); // 获取防伪标记的值
+                var token = $('input[name="__RequestVerificationToken"]').val(); // 獲取防偽標記得值
                 $.ajax({
                     type: "POST",
                     url: "/Message/DeleteMessage",
