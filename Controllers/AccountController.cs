@@ -10,6 +10,20 @@ namespace myhw.Controllers
     public class AccountController : Controller
     {
         private readonly AccountRepository _repository = new AccountRepository();
+        public ActionResult Logout()
+        {
+            // 清除 Session 和 Cookie
+            Session.Clear();
+            //Response.Cookies["RememberMe"].Expires = DateTime.Now.AddDays(-1);
+
+            // 存儲登出的用戶名到 ViewBag
+            ViewBag.LoggedOutUsername = GetRememberMeCookie();
+
+            // 重定向到登入頁面，並將登出的用戶名保存在 Cookie 中
+            return RedirectToAction("Log", "Account");
+        }
+        
+
 
         public ActionResult Log()
         {
@@ -116,10 +130,13 @@ namespace myhw.Controllers
             };
 
             Response.Cookies.Add(cookie);
-            // 將用戶名保存在 Session 中
-            Session["RememberedUsername"] = username;
+           
         }
-
+        private string GetRememberMeCookie()
+        {
+            var rememberMeCookie = Request.Cookies["RememberMe"];
+            return rememberMeCookie?.Value;
+        }
         public ActionResult Front()
         {
             // 檢查使用者是否已經登入

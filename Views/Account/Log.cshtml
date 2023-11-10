@@ -31,7 +31,8 @@
 
             <div class="form-group">
                 @Html.LabelFor(m => m.Username)
-                @Html.TextBoxFor(m => m.Username, new { @class = "form-control", @Value = Session["RememberedUsername"] })
+                @Html.TextBoxFor(m => m.Username, new { @class = "form-control" })
+                
             </div>
 
             <div class="form-group">

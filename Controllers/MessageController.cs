@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Web;
 using System.Web.Mvc;
+using System.Web.UI.WebControls;
 using static myhw.Repository.MessageRepository;
 
 public class MessageController : Controller
@@ -24,19 +25,7 @@ public class MessageController : Controller
         _messageService = new MessageService();
     }
 
-    // 登出
-    public ActionResult Logout()
-    {
-        // 保存之前的用戶名
-        Session["RememberedUsername"] = Session["Username"];
-
-        // 清除 Session
-        //Session.Clear();
-         
-
-        // 重定向到登入頁面
-        return RedirectToAction("Log", "Account");
-    }
+     
 
     // 前台顯示留言
     public ActionResult Front(string name, int? page)
@@ -50,7 +39,7 @@ public class MessageController : Controller
 
         try
         {
-            int correctedPage = page.HasValue ? page.Value : 1;
+            int correctedPage = page.GetValueOrDefault();
 
 
 
@@ -218,8 +207,18 @@ public class MessageController : Controller
                 if (message != null && Session["UserId"].ToString() == message.UserId.ToString())
                 {
                     // 刪除消息
-                    _messageService.DeleteMessage(ContentId);
-                    return Json(new ApiResponse<int> { Success = true, Message = "刪除留言成功", Data = ContentId });
+                    bool trueDelete=_messageService.DeleteMessage(ContentId);
+                    if (trueDelete)
+                    {
+                        // 返回統一的響應
+                        return Json(new ApiResponse<int> { Success = true, Message = "刪除留言成功", Data = ContentId });
+                    }
+                    else
+                    {
+
+                        return Json(new ApiResponse<string> { Success = false, Message = "刪除留言失敗" });
+                    }
+                    
                 }
                 else
                 {

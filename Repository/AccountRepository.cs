@@ -2,14 +2,15 @@
 using myhw.Models;
 using myhw.Service;
 using System;
+using System.Configuration;
 using System.Data.SqlClient;
 
 namespace myhw.Repository
 {
     public class AccountRepository
     {
-        private readonly string _connectionString = @"Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=LOG;Integrated Security=True;";
- 
+        private readonly string _connectionString = ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString;
+
 
         public AccountRepository()
         {
